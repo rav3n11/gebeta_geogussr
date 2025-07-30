@@ -6,21 +6,16 @@ import './App.css'
 
 function App() {
   const mapRef = useRef<GebetaMapRef>(null)
-  const { state, startGame, startCountdown, showMap, setGuess, setLocation } = useGameState()
+  const { state, startGame, startCountdown, showMap, setGuess, setLocation, showResults } = useGameState()
   const [countdown, setCountdown] = useState(5)
   const [currentMarker, setCurrentMarker] = useState<[number, number] | null>(null)
   const [hasStarted, setHasStarted] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
-
-  // Debug phase changes
-  useEffect(() => {
-    console.log('Current phase:', state.phase)
-  }, [state.phase])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Set a target location when game starts (only once)
   useEffect(() => {
     if (state.phase === 'tile-view' && !hasStarted) {
-      console.log('Starting tile view')
       setHasStarted(true)
       setLocation([38.7685, 9.0161]) // Addis Ababa for now
     }
@@ -29,9 +24,7 @@ function App() {
   // Handle countdown timer separately - wait for map to load
   useEffect(() => {
     if (state.phase === 'tile-view' && hasStarted && mapLoaded) {
-      console.log('Setting up timer - map is loaded')
       const timer = setTimeout(() => {
-        console.log('Starting countdown')
         startCountdown()
       }, 3000) // Show tile for 3 seconds before countdown
 
@@ -42,12 +35,9 @@ function App() {
   // Handle countdown countdown
   useEffect(() => {
     if (state.phase === 'countdown') {
-      console.log('Starting countdown timer')
       const countdownTimer = setInterval(() => {
         setCountdown(prev => {
-          console.log('Countdown:', prev)
           if (prev <= 1) {
-            console.log('Showing map')
             clearInterval(countdownTimer)
             showMap()
             return 5
@@ -67,23 +57,96 @@ function App() {
       setCountdown(5)
       setCurrentMarker(null)
       setMapLoaded(false)
+      setIsSubmitting(false)
     }
   }, [state.phase])
 
+  // Calculate bounds to fit both markers
+  const calculateBounds = (point1: [number, number], point2: [number, number]) => {
+    const lngs = [point1[0], point2[0]]
+    const lats = [point1[1], point2[1]]
+    
+    const minLng = Math.min(...lngs)
+    const maxLng = Math.max(...lngs)
+    const minLat = Math.min(...lats)
+    const maxLat = Math.max(...lats)
+    
+    // Add some padding
+    const lngPadding = (maxLng - minLng) * 0.1
+    const latPadding = (maxLat - minLat) * 0.1
+    
+    return {
+      center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2] as [number, number],
+      zoom: Math.min(12, Math.max(6, 15 - Math.log2(Math.max(maxLng - minLng, maxLat - minLat) * 100)))
+    }
+  }
+
+  // Draw results visualization
+  useEffect(() => {
+    if (state.phase === 'results' && state.currentLocation && state.userGuess && mapRef.current && mapLoaded) {
+      
+      // Calculate bounds to fit both markers
+      const bounds = calculateBounds(state.currentLocation, state.userGuess)
+      
+      // Add a small delay to ensure map style is fully loaded
+      const addResultsVisualization = () => {
+        if (!mapRef.current) return
+        
+        try {
+          // Clear previous markers and paths
+          mapRef.current.clearMarkers()
+          mapRef.current.clearPaths()
+          
+          // Add actual location marker (green)
+          mapRef.current.addImageMarker(
+            state.currentLocation!,
+            '/pin.png',
+            [30, 30],
+            () => console.log('Actual location clicked!'),
+            10,
+            '<b>🎯 Actual Location</b>'
+          )
+          
+          // Add user guess marker (red)
+          mapRef.current.addImageMarker(
+            state.userGuess!,
+            '/pin.png',
+            [30, 30],
+            () => console.log('Your guess clicked!'),
+            10,
+            '<b>📍 Your Guess</b>'
+          )
+          
+          // Add path between points
+          const path = [state.userGuess!, state.currentLocation!]
+          mapRef.current.addPath(path, {
+            color: '#ff4444',
+            width: 3,
+            opacity: 0.8
+          })
+          
+          console.log('Results visualization added successfully')
+        } catch (error) {
+          setTimeout(addResultsVisualization, 100)
+        }
+      }
+      
+      // Start the visualization process
+      addResultsVisualization()
+    }
+  }, [state.phase, state.currentLocation, state.userGuess, mapLoaded])
+
   const handleMapLoad = () => {
-    console.log('Map loaded')
     setMapLoaded(true)
   }
 
-    const handleMapClick = (lngLat: [number, number]) => {
+  const handleMapClick = (lngLat: [number, number]) => {
     if (state.phase === 'map-view') {
-      console.log('Placing marker at:', lngLat)
       setCurrentMarker(lngLat)
       
       // Add marker to the map using addImageMarker with custom icon
       if (mapRef.current) {
         mapRef.current.clearMarkers()
-        console.log('Adding marker at coordinates:', lngLat)
         mapRef.current.addImageMarker(
           lngLat,
           '/pin.png', // Local pin icon
@@ -92,20 +155,15 @@ function App() {
           10, // Z-index
           '<b>Your Guess</b>' // Popup HTML
         )
-        console.log('Marker added successfully')
-      } else {
-        console.log('mapRef.current is null')
       }
     }
   }
 
   const handleSubmitGuess = () => {
-    if (currentMarker) {
-      console.log('Submitting guess:', currentMarker)
+    if (currentMarker && state.phase === 'map-view' && !isSubmitting) {
+      setIsSubmitting(true)
       setGuess(currentMarker)
-      // TODO: Calculate distance and show results
-      // For now, just go back to menu
-      window.location.reload() // Temporary - we'll add proper results later
+      showResults(currentMarker)
     }
   }
 
@@ -130,7 +188,6 @@ function App() {
         <div className="tile-overlay">
           <h2>Memorize this tile...</h2>
           <p>You'll need to find this location on the map!</p>
-          <p>Debug: Phase = {state.phase}, HasStarted = {hasStarted.toString()}</p>
         </div>
         <div className="tile-disabled-overlay"></div>
         <GebetaMap
@@ -169,14 +226,19 @@ function App() {
   )
 
   const renderMapView = () => (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div className="game-container">
       <div className="map-view">
         <div className="map-overlay">
           <h2>Place your guess!</h2>
           <p>Click on the map to place your marker, then click Submit</p>
           {currentMarker && (
-            <button onClick={handleSubmitGuess} className="submit-button">
-              Submit Guess
+            <button 
+              key={`submit-${currentMarker[0]}-${currentMarker[1]}`}
+              onClick={handleSubmitGuess} 
+              className="submit-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Guess'}
             </button>
           )}
         </div>
@@ -192,12 +254,47 @@ function App() {
     </div>
   )
 
+  const renderResults = () => {
+    // Calculate center point and zoom to fit both markers
+    const bounds = state.currentLocation && state.userGuess 
+      ? calculateBounds(state.currentLocation, state.userGuess)
+      : { center: [38.7685, 9.0161] as [number, number], zoom: 6 }
+
+    return (
+      <div className="game-container">
+        <div className="map-view">
+          <div className="results-score">
+            <h3>Results</h3>
+            {state.distance !== undefined && (
+              <p>Distance: {state.distance.toFixed(1)} km</p>
+            )}
+            {state.roundScore !== undefined && (
+              <p>Score: {state.roundScore} points</p>
+            )}
+            <p>Total: {state.score} points</p>
+            <button onClick={() => window.location.reload()} className="play-again-button">
+              Play Again
+            </button>
+          </div>
+          <GebetaMap
+            ref={mapRef}
+            apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
+            center={bounds.center}
+            zoom={bounds.zoom}
+            style={{ width: '100%', height: '100%' }}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="App">
       {state.phase === 'menu' && renderMainMenu()}
       {state.phase === 'tile-view' && renderTileView()}
       {state.phase === 'countdown' && renderCountdown()}
       {state.phase === 'map-view' && renderMapView()}
+      {state.phase === 'results' && renderResults()}
     </div>
   )
 }

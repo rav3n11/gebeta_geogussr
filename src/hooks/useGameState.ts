@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { GameState } from '../types/game'
+import { calculateDistance, calculateScore } from '../utils/distance'
 
 export function useGameState() {
   const [state, setState] = useState<GameState>({
@@ -16,12 +17,33 @@ export function useGameState() {
   const setGuess = (coordinates: [number, number]) => setState(prev => ({ ...prev, userGuess: coordinates }))
   const setLocation = (coordinates: [number, number]) => setState(prev => ({ ...prev, currentLocation: coordinates }))
   
+  const showResults = (currentGuess?: [number, number]) => {
+    const guess = currentGuess || state.userGuess
+    if (state.currentLocation && guess) {
+      const [actualLng, actualLat] = state.currentLocation
+      const [guessLng, guessLat] = guess
+      
+      const distance = calculateDistance(actualLat, actualLng, guessLat, guessLng)
+      const roundScore = calculateScore(distance)
+      
+      setState(prev => ({
+        ...prev,
+        phase: 'results',
+        userGuess: guess,
+        distance,
+        roundScore,
+        score: prev.score + roundScore
+      }))
+    }
+  }
+  
   return { 
     state, 
     startGame, 
     startCountdown, 
     showMap, 
     setGuess, 
-    setLocation 
+    setLocation,
+    showResults
   }
 } 

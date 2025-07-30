@@ -11,6 +11,8 @@ export interface GameState {
   userGuess: [number, number] | null
   score: number
   round: number
+  distance?: number
+  roundScore?: number
 }
 
 export interface RoundResult {

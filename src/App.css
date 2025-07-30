@@ -171,6 +171,93 @@ body {
   background: #218838;
 }
 
+/* Results View */
+.results-view {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.results-score {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.results-score h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.results-score p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.results-score .play-again-button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: #007cbf;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.results-score .play-again-button:hover {
+  background: #005a8b;
+}
+
+.results-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  z-index: 1000;
+}
+
+.results-overlay h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.results-overlay p {
+  margin: 10px 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.play-again-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+  transition: background 0.2s;
+}
+
+.play-again-button:hover {
+  background: #0056b3;
+}
+
 /* Map View */
 .map-view {
   position: relative;

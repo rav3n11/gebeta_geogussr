@@ -364,10 +364,10 @@
     "@eslint/core" "^0.15.1"
     levn "^0.4.1"
 
-"@gebeta/tiles@^2.1.2":
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/@gebeta/tiles/-/tiles-2.1.2.tgz#938597d4a3cdfff27f40aa3e3d00941f4d12fb51"
-  integrity sha512-X4jURBQbfZypvCd6RhsKjYZUX8Tmn5VfrAVKyo4pcwBjudLzR95v302SWM3i05OkAtjoYvo2dhEvQBm8R15b+w==
+"@gebeta/tiles@^2.1.3":
+  version "2.1.3"
+  resolved "https://registry.yarnpkg.com/@gebeta/tiles/-/tiles-2.1.3.tgz#2000a47d30f582481c03582079fc2b95a6e0931b"
+  integrity sha512-Kta82r/T8WrwmXFV3RIeySYTne4q1GAqeiM6G421fc+gkjI76qoO4RNyBnSzWWvd9a3tQRKBES7Bviw7MrF2Ug==
   dependencies:
     maplibre-gl "^5.6.0"
     react "^19.1.0"
