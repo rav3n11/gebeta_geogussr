@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import GebetaMap from '@gebeta/tiles'
 import type { GebetaMapRef } from '@gebeta/tiles'
 import { useGameState } from './hooks/useGameState'
+import { getRandomCoordinates } from './utils/locations'
 import './App.css'
 
 function App() {
@@ -12,18 +13,22 @@ function App() {
   const [hasStarted, setHasStarted] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Set a target location when game starts (only once)
   useEffect(() => {
     if (state.phase === 'tile-view' && !hasStarted) {
       setHasStarted(true)
-      setLocation([38.7685, 9.0161]) // Addis Ababa for now
+      setIsLoading(true)
+      const randomLocation = getRandomCoordinates()
+      setLocation(randomLocation)
     }
   }, [state.phase, hasStarted, setLocation])
 
   // Handle countdown timer separately - wait for map to load
   useEffect(() => {
     if (state.phase === 'tile-view' && hasStarted && mapLoaded) {
+      setIsLoading(false)
       const timer = setTimeout(() => {
         startCountdown()
       }, 3000) // Show tile for 3 seconds before countdown
@@ -58,6 +63,7 @@ function App() {
       setCurrentMarker(null)
       setMapLoaded(false)
       setIsSubmitting(false)
+      setIsLoading(false)
     }
   }, [state.phase])
 
@@ -188,6 +194,12 @@ function App() {
         <div className="tile-overlay">
           <h2>Memorize this tile...</h2>
           <p>You'll need to find this location on the map!</p>
+          {isLoading && (
+            <div className="loading-indicator">
+              <div className="spinner"></div>
+              <p>Loading map...</p>
+            </div>
+          )}
         </div>
         <div className="tile-disabled-overlay"></div>
         <GebetaMap
