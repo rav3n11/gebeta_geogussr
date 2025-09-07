@@ -77,10 +77,6 @@ function App() {
     const minLat = Math.min(...lats)
     const maxLat = Math.max(...lats)
     
-    // Add some padding
-    const lngPadding = (maxLng - minLng) * 0.1
-    const latPadding = (maxLat - minLat) * 0.1
-    
     return {
       center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2] as [number, number],
       zoom: Math.min(12, Math.max(6, 15 - Math.log2(Math.max(maxLng - minLng, maxLat - minLat) * 100)))
@@ -90,10 +86,6 @@ function App() {
   // Draw results visualization
   useEffect(() => {
     if (state.phase === 'results' && state.currentLocation && state.userGuess && mapRef.current && mapLoaded) {
-      
-      // Calculate bounds to fit both markers
-      const bounds = calculateBounds(state.currentLocation, state.userGuess)
-      
       // Add a small delay to ensure map style is fully loaded
       const addResultsVisualization = () => {
         if (!mapRef.current) return
