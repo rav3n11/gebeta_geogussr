@@ -1,69 +1,151 @@
-import { useRef, useEffect, useState } from 'react'
-import GebetaMap from '@gebeta/tiles'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import type { GebetaMapRef } from '@gebeta/tiles'
 import { useGameState } from './hooks/useGameState'
 import { getRandomCoordinates } from './utils/locations'
-import './App.css'
+import type { GameSettings } from './types/game'
+import { DEFAULT_SETTINGS, AVAILABLE_CITIES } from './types/game'
+import { MainMenu } from './components/MainMenu'
+import { TileView } from './components/TileView'
+import { MapView } from './components/MapView'
+import { Results } from './components/Results'
+import { Settings } from './components/Settings'
 
 function App() {
   const mapRef = useRef<GebetaMapRef>(null)
   const { state, startGame, startCountdown, showMap, setGuess, setLocation, showResults } = useGameState()
-  const [countdown, setCountdown] = useState(5)
+  const [tileViewTimeLeft, setTileViewTimeLeft] = useState(0)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const isLoadingRef = useRef(false)
+  const timeLeftRef = useRef(0)
   const [currentMarker, setCurrentMarker] = useState<[number, number] | null>(null)
   const [hasStarted, setHasStarted] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [settings, setSettings] = useState<GameSettings>(() => {
+    const saved = localStorage.getItem('gameSettings')
+    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS
+  })
+  const [bestScore, setBestScore] = useState(() => {
+    const saved = localStorage.getItem('bestScore')
+    return saved ? parseInt(saved) : 0
+  })
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('gameSettings', JSON.stringify(settings))
+  }, [settings])
+
+  // Track and save best score
+  useEffect(() => {
+    if (state.score > bestScore) {
+      setBestScore(state.score)
+      localStorage.setItem('bestScore', state.score.toString())
+    }
+  }, [state.score, bestScore])
+
+  const updateSettings = (newSettings: Partial<GameSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }))
+  }
+
+  const toggleCity = (cityName: string) => {
+    setSettings(prev => ({
+      ...prev,
+      selectedCities: prev.selectedCities.includes(cityName)
+        ? prev.selectedCities.filter(name => name !== cityName)
+        : [...prev.selectedCities, cityName]
+    }))
+  }
+
+  const resetBestScore = () => {
+    setBestScore(0)
+    localStorage.setItem('bestScore', '0')
+  }
+
+  const selectAllCities = () => {
+    setSettings(prev => ({
+      ...prev,
+      selectedCities: AVAILABLE_CITIES.map(city => city.name)
+    }))
+  }
+
+  const clearAllCities = () => {
+    setSettings(prev => ({
+      ...prev,
+      selectedCities: [AVAILABLE_CITIES[0].name] // Keep at least one city
+    }))
+  }
 
   // Set a target location when game starts (only once)
   useEffect(() => {
     if (state.phase === 'tile-view' && !hasStarted) {
       setHasStarted(true)
       setIsLoading(true)
-      const randomLocation = getRandomCoordinates()
+      isLoadingRef.current = true
+      const randomLocation = getRandomCoordinates(settings.selectedCities)
       setLocation(randomLocation)
     }
   }, [state.phase, hasStarted, setLocation])
 
-  // Handle countdown timer separately - wait for map to load
+  // Handle tile view timer - wait for map to load, then countdown
   useEffect(() => {
-    if (state.phase === 'tile-view' && hasStarted && mapLoaded) {
+    if (state.phase === 'tile-view' && hasStarted && mapLoaded && isLoadingRef.current) {
       setIsLoading(false)
-      const timer = setTimeout(() => {
-        startCountdown()
-      }, 3000) // Show tile for 3 seconds before countdown
-
-      return () => clearTimeout(timer)
-    }
-  }, [state.phase, hasStarted, mapLoaded, startCountdown])
-
-  // Handle countdown countdown
-  useEffect(() => {
-    if (state.phase === 'countdown') {
-      const countdownTimer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownTimer)
-            showMap()
-            return 5
+      isLoadingRef.current = false
+      
+      // Clear any existing timer first
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      
+      timeLeftRef.current = settings.tileViewDuration
+      setTileViewTimeLeft(settings.tileViewDuration)
+      
+      timerRef.current = setInterval(() => {
+        timeLeftRef.current -= 1
+        
+        // Only update state every second to avoid excessive re-renders
+        setTileViewTimeLeft(timeLeftRef.current)
+        
+        if (timeLeftRef.current <= 0) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current)
+            timerRef.current = null
           }
-          return prev - 1
-        })
+          showMap()
+        }
       }, 1000)
-
-      return () => clearInterval(countdownTimer)
     }
-  }, [state.phase, showMap])
+  }, [state.phase, hasStarted, mapLoaded, settings.tileViewDuration])
+
+  // Cleanup timer on unmount or phase change
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
+  }, [state.phase])
 
   // Reset hasStarted when returning to menu
   useEffect(() => {
     if (state.phase === 'menu') {
       setHasStarted(false)
-      setCountdown(5)
+      setTileViewTimeLeft(0)
       setCurrentMarker(null)
       setMapLoaded(false)
       setIsSubmitting(false)
       setIsLoading(false)
+      isLoadingRef.current = false
+      
+      // Clear any running timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
     }
   }, [state.phase])
 
@@ -134,11 +216,24 @@ function App() {
     }
   }, [state.phase, state.currentLocation, state.userGuess, mapLoaded])
 
-  const handleMapLoad = () => {
+  const handleMapLoad = useCallback(() => {
     setMapLoaded(true)
-  }
+  }, [])
 
-  const handleMapClick = (lngLat: [number, number]) => {
+
+  const handleStartGame = useCallback(() => {
+    startGame()
+  }, [startGame])
+
+  const handleOpenSettings = useCallback(() => {
+    setShowSettings(true)
+  }, [])
+
+  const handleCloseSettings = useCallback(() => {
+    setShowSettings(false)
+  }, [])
+
+  const handleMapClick = useCallback((lngLat: [number, number]) => {
     if (state.phase === 'map-view') {
       setCurrentMarker(lngLat)
       
@@ -155,150 +250,75 @@ function App() {
         )
       }
     }
-  }
+  }, [state.phase])
 
-  const handleSubmitGuess = () => {
+  const handleSubmitGuess = useCallback(() => {
     if (currentMarker && state.phase === 'map-view' && !isSubmitting) {
       setIsSubmitting(true)
       setGuess(currentMarker)
       showResults(currentMarker)
     }
-  }
+  }, [currentMarker, state.phase, isSubmitting, setGuess, showResults])
 
-  const renderMainMenu = () => (
-    <div className="game-container">
-      <div className="main-menu">
-        <h1>🎯 Guess the Tile</h1>
-        <p>Can you recognize a corner of Ethiopia just from its roads?</p>
-        <button onClick={startGame} className="start-button">
-          Start Game
-        </button>
-        <button className="leaderboard-button">
-          Leaderboard
-        </button>
-      </div>
-    </div>
-  )
+  const handlePlayAgain = useCallback(() => {
+    window.location.reload()
+  }, [])
 
-  const renderTileView = () => (
-    <div className="game-container">
-      <div className="tile-view">
-        <div className="tile-overlay">
-          <h2>Memorize this tile...</h2>
-          <p>You'll need to find this location on the map!</p>
-          {isLoading && (
-            <div className="loading-indicator">
-              <div className="spinner"></div>
-              <p>Loading map...</p>
-            </div>
-          )}
-        </div>
-        <div className="tile-disabled-overlay"></div>
-        <GebetaMap
-          ref={mapRef}
-          apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
-          center={state.currentLocation || [38.7685, 9.0161]}
-          zoom={15}
-          style={{ width: '100%', height: '100%' }}
-          onMapLoaded={handleMapLoad}
-          blockInteractions={true}
-        />
-      </div>
-    </div>
-  )
 
-  const renderCountdown = () => (
-    <div className="game-container">
-      <div className="countdown">
-        <div className="countdown-map">
-          <GebetaMap
-            ref={mapRef}
-            apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
-            center={state.currentLocation || [38.7685, 9.0161]}
-            zoom={15}
-            style={{ width: '100%', height: '100%' }}
-          />
-        </div>
-        <div className="countdown-overlay">
-          <div className="countdown-content">
-            <h1>{countdown}</h1>
-            <p>Get ready to guess!</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 
-  const renderMapView = () => (
-    <div className="game-container">
-      <div className="map-view">
-        <div className="map-overlay">
-          <h2>Place your guess!</h2>
-          <p>Click on the map to place your marker, then click Submit</p>
-          {currentMarker && (
-            <button 
-              key={`submit-${currentMarker[0]}-${currentMarker[1]}`}
-              onClick={handleSubmitGuess} 
-              className="submit-button"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Guess'}
-            </button>
-          )}
-        </div>
-        <GebetaMap
-          ref={mapRef}
-          apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
-          center={[38.7685, 9.0161]}
-          zoom={6}
-          onMapClick={handleMapClick}
-          style={{ width: '100%', height: '100%' }}
-        />
-      </div>
-    </div>
-  )
-
-  const renderResults = () => {
-    // Calculate center point and zoom to fit both markers
-    const bounds = state.currentLocation && state.userGuess 
-      ? calculateBounds(state.currentLocation, state.userGuess)
-      : { center: [38.7685, 9.0161] as [number, number], zoom: 6 }
-
-    return (
-      <div className="game-container">
-        <div className="map-view">
-          <div className="results-score">
-            <h3>Results</h3>
-            {state.distance !== undefined && (
-              <p>Distance: {state.distance.toFixed(1)} km</p>
-            )}
-            {state.roundScore !== undefined && (
-              <p>Score: {state.roundScore} points</p>
-            )}
-            <p>Total: {state.score} points</p>
-            <button onClick={() => window.location.reload()} className="play-again-button">
-              Play Again
-            </button>
-          </div>
-          <GebetaMap
-            ref={mapRef}
-            apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
-            center={bounds.center}
-            zoom={bounds.zoom}
-            style={{ width: '100%', height: '100%' }}
-          />
-        </div>
-      </div>
-    )
-  }
 
   return (
-    <div className="App">
-      {state.phase === 'menu' && renderMainMenu()}
-      {state.phase === 'tile-view' && renderTileView()}
-      {state.phase === 'countdown' && renderCountdown()}
-      {state.phase === 'map-view' && renderMapView()}
-      {state.phase === 'results' && renderResults()}
+    <div className="min-h-screen bg-gray-50">
+      {state.phase === 'menu' && (
+        <MainMenu
+          onStartGame={handleStartGame}
+          onOpenSettings={handleOpenSettings}
+          bestScore={bestScore}
+        />
+      )}
+      {state.phase === 'tile-view' && (
+        <TileView
+          ref={mapRef}
+          currentLocation={state.currentLocation}
+          isLoading={isLoading}
+          timeLeft={tileViewTimeLeft}
+          onMapLoad={handleMapLoad}
+        />
+      )}
+      {state.phase === 'map-view' && (
+        <MapView
+          ref={mapRef}
+          currentMarker={currentMarker}
+          isSubmitting={isSubmitting}
+          onMapClick={handleMapClick}
+          onSubmitGuess={handleSubmitGuess}
+        />
+      )}
+      {state.phase === 'results' && (
+        <Results
+          ref={mapRef}
+          currentLocation={state.currentLocation}
+          userGuess={state.userGuess}
+          distance={state.distance}
+          roundScore={state.roundScore}
+          score={state.score}
+          bestScore={bestScore}
+          onPlayAgain={handlePlayAgain}
+        />
+      )}
+      {showSettings && (
+        <Settings
+          settings={settings}
+          bestScore={bestScore}
+          onClose={handleCloseSettings}
+          onUpdateSettings={updateSettings}
+          onToggleCity={toggleCity}
+          onSelectAllCities={selectAllCities}
+          onClearAllCities={clearAllCities}
+          onResetBestScore={resetBestScore}
+          onResetToDefaults={() => setSettings(DEFAULT_SETTINGS)}
+        />
+      )}
     </div>
   )
 }

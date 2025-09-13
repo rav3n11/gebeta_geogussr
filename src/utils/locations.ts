@@ -27,11 +27,21 @@ export const ETHIOPIAN_CITIES: Location[] = [
   { name: 'Kombolcha', coordinates: [39.7333, 11.0833], population: 65000 }
 ]
 
-export function getRandomLocation(): Location {
-  const randomIndex = Math.floor(Math.random() * ETHIOPIAN_CITIES.length)
-  return ETHIOPIAN_CITIES[randomIndex]
+export function getRandomLocation(selectedCities?: string[]): Location {
+  const cities = selectedCities 
+    ? ETHIOPIAN_CITIES.filter(city => selectedCities.includes(city.name))
+    : ETHIOPIAN_CITIES
+  
+  if (cities.length === 0) {
+    // Fallback to all cities if none selected
+    const randomIndex = Math.floor(Math.random() * ETHIOPIAN_CITIES.length)
+    return ETHIOPIAN_CITIES[randomIndex]
+  }
+  
+  const randomIndex = Math.floor(Math.random() * cities.length)
+  return cities[randomIndex]
 }
 
-export function getRandomCoordinates(): [number, number] {
-  return getRandomLocation().coordinates
+export function getRandomCoordinates(selectedCities?: string[]): [number, number] {
+  return getRandomLocation(selectedCities).coordinates
 } 
