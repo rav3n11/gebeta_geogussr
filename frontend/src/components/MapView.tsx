@@ -3,6 +3,7 @@ import GebetaMap from '@gebeta/tiles'
 import type { GebetaMapRef } from '@gebeta/tiles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { MapPin } from 'lucide-react'
 import { gebetaMapsApiKey } from '../config/env'
 
@@ -41,7 +42,7 @@ export const MapView = memo(forwardRef<GebetaMapRef, MapViewProps>(({
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                <Spinner size="sm" className="border-white border-t-transparent mr-2" />
                 Submitting...
               </>
             ) : (

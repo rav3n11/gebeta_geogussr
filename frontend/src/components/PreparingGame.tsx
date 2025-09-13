@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, MapPin } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
+import { MapPin } from 'lucide-react'
 
 export const PreparingGame = memo(() => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -21,7 +22,7 @@ export const PreparingGame = memo(() => (
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-center space-x-3">
-          <Loader2 className="w-6 h-6 animate-spin text-black" />
+          <Spinner size="md" />
           <p className="text-sm text-gray-600">Loading map...</p>
         </div>
         

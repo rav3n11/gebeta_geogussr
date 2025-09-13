@@ -10,6 +10,7 @@ import { TileView } from './components/TileView'
 import { MapView } from './components/MapView'
 import { Results } from './components/Results'
 import { Settings } from './components/Settings'
+import CityLeaderboard from './components/CityLeaderboard'
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext'
 import { apiClient } from './utils/api'
 
@@ -27,6 +28,8 @@ function AppContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showCityLeaderboard, setShowCityLeaderboard] = useState(false)
+  const [selectedCityForLeaderboard, setSelectedCityForLeaderboard] = useState<string>('Addis Ababa')
   const [settings, setSettings] = useState<GameSettings>(() => {
     const saved = localStorage.getItem('gameSettings')
     return saved ? JSON.parse(saved) : DEFAULT_SETTINGS
@@ -293,6 +296,16 @@ function AppContent() {
     setShowSettings(false)
   }, [])
 
+
+  const handleOpenCityLeaderboard = useCallback((city: string) => {
+    setSelectedCityForLeaderboard(city)
+    setShowCityLeaderboard(true)
+  }, [])
+
+  const handleCloseCityLeaderboard = useCallback(() => {
+    setShowCityLeaderboard(false)
+  }, [])
+
   const handleMapClick = useCallback((lngLat: [number, number]) => {
     if (state.phase === 'map-view') {
       setCurrentMarker(lngLat)
@@ -380,6 +393,7 @@ function AppContent() {
           onStartGame={handleStartGame}
           onStartSpecificCity={handleStartSpecificCity}
           onOpenSettings={handleOpenSettings}
+          onOpenCityLeaderboard={handleOpenCityLeaderboard}
           bestScore={bestScore}
           cityScores={cityScores}
         />
@@ -434,6 +448,12 @@ function AppContent() {
           onClearAllCities={clearAllCities}
           onResetBestScore={resetBestScore}
           onResetToDefaults={() => setSettings(DEFAULT_SETTINGS)}
+        />
+      )}
+      {showCityLeaderboard && (
+        <CityLeaderboard 
+          city={selectedCityForLeaderboard} 
+          onClose={handleCloseCityLeaderboard} 
         />
       )}
     </div>

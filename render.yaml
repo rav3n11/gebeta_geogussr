@@ -9,8 +9,6 @@ services:
       yarn build
     staticPublishPath: ./frontend/dist
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: VITE_APP_URL
         value: https://gebeta-geogussr.onrender.com
       - key: VITE_API_URL

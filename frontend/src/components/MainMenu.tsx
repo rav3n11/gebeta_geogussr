@@ -4,18 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Navigation, Settings, Trophy, MapPin, ArrowLeft, User } from 'lucide-react'
 import { CityCarousel } from './CityCarousel'
+import LeaderboardPreview from './LeaderboardPreview'
+import Leaderboard from './Leaderboard'
 import { useTelegram } from '../contexts/TelegramContext'
 
 interface MainMenuProps {
   onStartGame: () => void
   onStartSpecificCity: (cityName: string) => void
   onOpenSettings: () => void
+  onOpenCityLeaderboard: (cityName: string) => void
   bestScore: number
   cityScores: Record<string, number>
 }
 
-export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings, bestScore, cityScores }: MainMenuProps) => {
+export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings, onOpenCityLeaderboard, bestScore, cityScores }: MainMenuProps) => {
   const [showCitySelection, setShowCitySelection] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const { user, hapticFeedback } = useTelegram()
 
   const handleCitySelect = (cityName: string) => {
@@ -37,6 +41,16 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
   const handleShowCitySelection = () => {
     hapticFeedback.selectionChanged()
     setShowCitySelection(true)
+  }
+
+  const handleOpenLeaderboard = () => {
+    hapticFeedback.selectionChanged()
+    setShowLeaderboard(true)
+  }
+
+  const handleCloseLeaderboard = () => {
+    hapticFeedback.selectionChanged()
+    setShowLeaderboard(false)
   }
 
   if (showCitySelection) {
@@ -65,8 +79,40 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
           <CardContent className="px-6 pb-6">
             <CityCarousel
               onPlayCity={handleCitySelect}
+              onViewLeaderboard={onOpenCityLeaderboard}
               cityScores={cityScores}
             />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (showLeaderboard) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseLeaderboard}
+                className="text-gray-600 hover:text-black"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <CardTitle className="text-2xl font-bold text-black flex items-center gap-2">
+                <Trophy className="w-6 h-6" />
+                Leaderboard
+              </CardTitle>
+            </div>
+            <CardDescription className="text-gray-600 mt-3">
+              View global and city-specific rankings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            <Leaderboard onClose={handleCloseLeaderboard} />
           </CardContent>
         </Card>
       </div>
@@ -135,6 +181,10 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
               Best Score: {bestScore}
             </Badge>
           </div>
+
+          {/* Leaderboard Preview */}
+          <LeaderboardPreview onViewFull={handleOpenLeaderboard} />
+
           <div className="flex justify-center mt-4">
             <span className="text-xs text-gray-400">Powered by Gebeta</span>
           </div>

@@ -2,6 +2,7 @@ import { memo, forwardRef } from 'react'
 import GebetaMap from '@gebeta/tiles'
 import type { GebetaMapRef } from '@gebeta/tiles'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { Target } from 'lucide-react'
 import { gebetaMapsApiKey } from '../config/env'
 
@@ -42,7 +43,7 @@ export const TileView = memo(forwardRef<GebetaMapRef, TileViewProps>(({
         {isLoading && (
           <CardContent className="pt-0">
             <div className="flex items-center justify-center space-x-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-black"></div>
+              <Spinner size="md" />
               <p className="text-sm text-gray-600">Loading map...</p>
             </div>
           </CardContent>

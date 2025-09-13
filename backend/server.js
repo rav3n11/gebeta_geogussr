@@ -10,8 +10,8 @@ app.use(cors())
 app.use(express.json())
 
 // Import API routes
-const scoresRouter = require('./scores')
-const leaderboardRouter = require('./leaderboard')
+const scoresRouter = require('./scores.js')
+const leaderboardRouter = require('./leaderboard.js')
 
 // API routes
 app.use('/api/scores', scoresRouter)

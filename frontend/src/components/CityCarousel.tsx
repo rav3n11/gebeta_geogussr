@@ -1,15 +1,16 @@
 import { memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Trophy, Play } from 'lucide-react'
+import { Trophy, Play, BarChart3 } from 'lucide-react'
 import { AVAILABLE_CITIES } from '../types/game'
 
 interface CityCarouselProps {
   onPlayCity: (cityName: string) => void
+  onViewLeaderboard: (cityName: string) => void
   cityScores: Record<string, number>
 }
 
-export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps) => {
+export const CityCarousel = memo(({ onPlayCity, onViewLeaderboard, cityScores }: CityCarouselProps) => {
   return (
     <div className="w-full">
       <div className="relative">
@@ -38,17 +39,30 @@ export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps)
                     </div>
                   </div>
 
-                  <Button
-                    size="sm"
-                    className="w-full bg-black text-white hover:bg-gray-800 group-hover:bg-gray-700 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onPlayCity(city.name)
-                    }}
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Play
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-black text-white hover:bg-gray-800 group-hover:bg-gray-700 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onPlayCity(city.name)
+                      }}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Play
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-3"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onViewLeaderboard(city.name)
+                      }}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )
