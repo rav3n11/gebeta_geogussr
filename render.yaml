@@ -3,7 +3,10 @@ services:
     name: gebeta-geogussr
     env: static
     plan: free
-    buildCommand: cd frontend && yarn install && yarn build
+    buildCommand: |
+      cd frontend
+      yarn install --frozen-lockfile
+      yarn build
     staticPublishPath: ./frontend/dist
     envVars:
       - key: NODE_ENV
