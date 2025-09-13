@@ -24,7 +24,7 @@ export const MainMenu = memo(({ onStartGame, onOpenSettings, bestScore }: MainMe
             <Settings className="w-4 h-4" />
           </Button>
           <div className="mx-auto w-16 h-16 bg-black rounded-full flex items-center justify-center">
-            <Target className="w-8 h-8 text-white" />
+            <img src="/logo.svg" alt="Gebeta" className="w-8 h-8" />
           </div>
           <div className="w-8" /> {/* Spacer for alignment */}
         </div>
@@ -49,6 +49,9 @@ export const MainMenu = memo(({ onStartGame, onOpenSettings, bestScore }: MainMe
             <Trophy className="w-3 h-3" />
             Best Score: {bestScore}
           </Badge>
+        </div>
+        <div className="flex justify-center mt-4">
+          <span className="text-xs text-gray-400">Powered by Gebeta</span>
         </div>
       </CardContent>
     </Card>

@@ -14,6 +14,7 @@ interface ResultsProps {
   score: number
   bestScore: number
   onPlayAgain: () => void
+  onMainMenu: () => void
 }
 
 // Calculate center point and zoom to fit both markers
@@ -39,7 +40,8 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
   roundScore,
   score,
   bestScore,
-  onPlayAgain
+  onPlayAgain,
+  onMainMenu
 }, ref) => {
   const bounds = currentLocation && userGuess 
     ? calculateBounds(currentLocation, userGuess)
@@ -86,14 +88,24 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
               </div>
             </div>
           </div>
-          <Button 
-            onClick={onPlayAgain} 
-            className="w-full bg-black text-white hover:bg-gray-800"
-            size="lg"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Play Again
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={onPlayAgain} 
+              className="w-full bg-black text-white hover:bg-gray-800"
+              size="lg"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Play Again
+            </Button>
+            <Button 
+              onClick={onMainMenu} 
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              Main Menu
+            </Button>
+          </div>
         </CardContent>
       </Card>
       <GebetaMap

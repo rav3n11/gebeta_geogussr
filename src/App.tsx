@@ -261,6 +261,41 @@ function App() {
   }, [currentMarker, state.phase, isSubmitting, setGuess, showResults])
 
   const handlePlayAgain = useCallback(() => {
+    // Reset game state and start a new game
+    setHasStarted(false)
+    setTileViewTimeLeft(0)
+    setCurrentMarker(null)
+    setMapLoaded(false)
+    setIsSubmitting(false)
+    setIsLoading(false)
+    isLoadingRef.current = false
+    
+    // Clear any running timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    
+    startGame()
+  }, [startGame])
+
+  const handleMainMenu = useCallback(() => {
+    // Reset all game state
+    setHasStarted(false)
+    setTileViewTimeLeft(0)
+    setCurrentMarker(null)
+    setMapLoaded(false)
+    setIsSubmitting(false)
+    setIsLoading(false)
+    isLoadingRef.current = false
+    
+    // Clear any running timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    
+    // Reset game state to menu
     window.location.reload()
   }, [])
 
@@ -304,6 +339,7 @@ function App() {
           score={state.score}
           bestScore={bestScore}
           onPlayAgain={handlePlayAgain}
+          onMainMenu={handleMainMenu}
         />
       )}
       {showSettings && (
