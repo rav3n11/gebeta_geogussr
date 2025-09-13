@@ -2,8 +2,9 @@ import { memo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Navigation, Settings, Trophy, MapPin, ArrowLeft } from 'lucide-react'
+import { Navigation, Settings, Trophy, MapPin, ArrowLeft, User } from 'lucide-react'
 import { CityCarousel } from './CityCarousel'
+import { useTelegram } from '../contexts/TelegramContext'
 
 interface MainMenuProps {
   onStartGame: () => void
@@ -15,10 +16,27 @@ interface MainMenuProps {
 
 export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings, bestScore, cityScores }: MainMenuProps) => {
   const [showCitySelection, setShowCitySelection] = useState(false)
+  const { user, hapticFeedback } = useTelegram()
 
   const handleCitySelect = (cityName: string) => {
+    hapticFeedback.selectionChanged()
     onStartSpecificCity(cityName)
     setShowCitySelection(false)
+  }
+
+  const handleStartGame = () => {
+    hapticFeedback.impactOccurred('medium')
+    onStartGame()
+  }
+
+  const handleOpenSettings = () => {
+    hapticFeedback.selectionChanged()
+    onOpenSettings()
+  }
+
+  const handleShowCitySelection = () => {
+    hapticFeedback.selectionChanged()
+    setShowCitySelection(true)
   }
 
   if (showCitySelection) {
@@ -45,7 +63,7 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <CityCarousel 
+            <CityCarousel
               onPlayCity={handleCitySelect}
               cityScores={cityScores}
             />
@@ -56,62 +74,73 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
   }
 
   return (
-  <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardHeader className="text-center space-y-4">
-        <div className="flex justify-between items-start">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onOpenSettings}
-            className="text-gray-600 hover:text-black"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-          <div className="mx-auto w-16 h-16 bg-black rounded-full flex items-center justify-center">
-            <img src="/logo.svg" alt="Gebeta" className="w-8 h-8" />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md mx-auto shadow-lg">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-between items-start">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenSettings}
+              className="text-gray-600 hover:text-black"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            <div className="mx-auto w-16 h-16 bg-black rounded-full flex items-center justify-center">
+              <img src="/logo.svg" alt="Gebeta" className="w-8 h-8" />
+            </div>
+            <div className="w-8" /> {/* Spacer for alignment */}
           </div>
-          <div className="w-8" /> {/* Spacer for alignment */}
-        </div>
-        <CardTitle className="text-3xl font-bold text-black">
-          Guess the Place
-        </CardTitle>
-        <CardDescription className="text-lg text-gray-600">
-          Can you recognize a corner of Ethiopia just from its roads?
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Button 
-          onClick={onStartGame} 
-          size="lg" 
-          className="w-full h-12 text-lg font-semibold bg-black text-white hover:bg-gray-800"
-        >
-          <Navigation className="w-5 h-5 mr-2" />
-          Random Place
-        </Button>
-        
-        <Button 
-          onClick={() => setShowCitySelection(true)}
-          variant="outline"
-          size="lg" 
-          className="w-full h-12 text-lg font-semibold"
-        >
-          <MapPin className="w-5 h-5 mr-2" />
-          Choose City
-        </Button>
-        
-        <div className="flex justify-center space-x-2 text-sm text-gray-600">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Trophy className="w-3 h-3" />
-            Best Score: {bestScore}
-          </Badge>
-        </div>
-        <div className="flex justify-center mt-4">
-          <span className="text-xs text-gray-400">Powered by Gebeta</span>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+          <CardTitle className="text-3xl font-bold text-black">
+            Guess the Place
+          </CardTitle>
+          <CardDescription className="text-lg text-gray-600">
+            Can you recognize a corner of Ethiopia just from its roads?
+          </CardDescription>
+
+          {/* User Info */}
+          {user && (
+            <div className="flex items-center justify-center gap-2 p-3 bg-gray-100 rounded-lg">
+              <User className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                Welcome, {user.first_name}
+                {user.username && ` (@${user.username})`}
+              </span>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={handleStartGame}
+            size="lg"
+            className="w-full h-12 text-lg font-semibold bg-black text-white hover:bg-gray-800"
+          >
+            <Navigation className="w-5 h-5 mr-2" />
+            Random Place
+          </Button>
+
+          <Button
+            onClick={handleShowCitySelection}
+            variant="outline"
+            size="lg"
+            className="w-full h-12 text-lg font-semibold"
+          >
+            <MapPin className="w-5 h-5 mr-2" />
+            Choose City
+          </Button>
+
+          <div className="flex justify-center space-x-2 text-sm text-gray-600">
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Trophy className="w-3 h-3" />
+              Best Score: {bestScore}
+            </Badge>
+          </div>
+          <div className="flex justify-center mt-4">
+            <span className="text-xs text-gray-400">Powered by Gebeta</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 })
 

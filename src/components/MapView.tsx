@@ -4,6 +4,7 @@ import type { GebetaMapRef } from '@gebeta/tiles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MapPin } from 'lucide-react'
+import { gebetaMapsApiKey } from '../config/env'
 
 interface MapViewProps {
   currentMarker: [number, number] | null
@@ -52,7 +53,7 @@ export const MapView = memo(forwardRef<GebetaMapRef, MapViewProps>(({
     </Card>
     <GebetaMap
       ref={ref}
-      apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
+      apiKey={gebetaMapsApiKey}
       center={[38.7685, 9.0161]}
       zoom={6}
       onMapClick={onMapClick}

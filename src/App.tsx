@@ -10,8 +10,11 @@ import { TileView } from './components/TileView'
 import { MapView } from './components/MapView'
 import { Results } from './components/Results'
 import { Settings } from './components/Settings'
+import { TelegramProvider, useTelegram } from './contexts/TelegramContext'
+import { apiClient } from './utils/api'
 
-function App() {
+function AppContent() {
+  const { webApp, user } = useTelegram()
   const mapRef = useRef<GebetaMapRef>(null)
   const { state, startGame, startTileView, showMap, setGuess, setLocation, showResults } = useGameState()
   const [tileViewTimeLeft, setTileViewTimeLeft] = useState(0)
@@ -62,6 +65,34 @@ function App() {
       localStorage.setItem('cityScores', JSON.stringify(newCityScores))
     }
   }, [state.score, currentPlayingCity, cityScores])
+
+  // Submit score to backend when game ends
+  useEffect(() => {
+    if (state.phase === 'results' && state.currentLocation && state.userGuess && webApp && user) {
+      const submitScore = async () => {
+        try {
+          const initData = webApp.initData
+          const city = currentPlayingCity || 'Random'
+          const gameMode = currentPlayingCity ? 'city' : 'random'
+          
+          await apiClient.submitScore({
+            score: state.score,
+            city,
+            gameMode,
+            distance: state.distance || 0,
+            roundScore: state.roundScore || 0
+          }, initData)
+          
+          console.log('Score submitted successfully!')
+        } catch (error) {
+          console.error('Failed to submit score:', error)
+          // Don't show error to user, just log it
+        }
+      }
+      
+      submitScore()
+    }
+  }, [state.phase, state.currentLocation, state.userGuess, state.score, state.distance, state.roundScore, webApp, user, currentPlayingCity])
 
   const updateSettings = (newSettings: Partial<GameSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }))
@@ -406,6 +437,14 @@ function App() {
         />
       )}
     </div>
+  )
+}
+
+function App() {
+  return (
+    <TelegramProvider>
+      <AppContent />
+    </TelegramProvider>
   )
 }
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Trophy, RotateCcw } from 'lucide-react'
 import { getScoreTier } from '../utils/distance'
+import { gebetaMapsApiKey } from '../config/env'
 
 interface ResultsProps {
   currentLocation: [number, number] | null
@@ -130,7 +131,7 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
       </Card>
       <GebetaMap
         ref={ref}
-        apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
+        apiKey={gebetaMapsApiKey}
         center={bounds.center}
         zoom={bounds.zoom}
         style={{ width: '100%', height: '100%' }}

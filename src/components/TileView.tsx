@@ -3,6 +3,7 @@ import GebetaMap from '@gebeta/tiles'
 import type { GebetaMapRef } from '@gebeta/tiles'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Target } from 'lucide-react'
+import { gebetaMapsApiKey } from '../config/env'
 
 interface TileViewProps {
   currentLocation: [number, number] | null
@@ -50,7 +51,7 @@ export const TileView = memo(forwardRef<GebetaMapRef, TileViewProps>(({
     )}
     <GebetaMap
       ref={ref}
-      apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}
+      apiKey={gebetaMapsApiKey}
       center={currentLocation || [38.7685, 9.0161]}
       zoom={15}
       style={{ width: '100%', height: '100%' }}

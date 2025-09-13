@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gebeta-geogussr
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
