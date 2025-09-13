@@ -1,16 +1,16 @@
 services:
   - type: web
     name: gebeta-geogussr
-    env: node
+    env: static
     plan: free
     buildCommand: npm run build
-    startCommand: npm start
+    staticPublishPath: ./dist
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGODB_URI
-        sync: false
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: NEXT_PUBLIC_APP_URL
+      - key: VITE_APP_URL
+        value: https://gebeta-geogussr.onrender.com
+      - key: VITE_API_URL
+        value: https://gebeta-geogussr-backend.onrender.com/api
+      - key: VITE_GEBETA_MAPS_API_KEY
         sync: false

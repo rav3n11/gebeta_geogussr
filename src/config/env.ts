@@ -1,6 +1,6 @@
 // Environment configuration
 export const config = {
-  // App URL - used for API calls and external references
+  // App URL - used for external references (frontend URL)
   appUrl: (() => {
     if (typeof window !== 'undefined') {
       // Client-side: use Vite environment variable or current origin
@@ -11,16 +11,16 @@ export const config = {
     }
   })(),
   
-  // API base URL
+  // API base URL - points to backend service
   apiUrl: (() => {
     if (typeof window !== 'undefined') {
-      // Client-side: use Vite environment variable or current origin
-      return import.meta.env.VITE_APP_URL || window.location.origin
+      // Client-side: use backend URL from environment
+      return import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
     } else {
-      // Server-side: use Node environment variable
-      return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      // Server-side: use backend URL from environment
+      return process.env.API_URL || 'http://localhost:3000/api'
     }
-  })() + '/api',
+  })(),
   
   // Environment
   isDevelopment: import.meta.env.DEV,

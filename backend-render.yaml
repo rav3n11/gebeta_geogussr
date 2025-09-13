@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gebeta-geogussr-backend
+    env: node
+    plan: free
+    buildCommand: echo "Backend ready"
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PORT
+        value: 3000
