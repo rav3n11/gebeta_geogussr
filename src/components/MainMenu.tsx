@@ -29,7 +29,7 @@ export const MainMenu = memo(({ onStartGame, onOpenSettings, bestScore }: MainMe
           <div className="w-8" /> {/* Spacer for alignment */}
         </div>
         <CardTitle className="text-3xl font-bold text-black">
-          Guess the Tile
+          Guess the Place
         </CardTitle>
         <CardDescription className="text-lg text-gray-600">
           Can you recognize a corner of Ethiopia just from its roads?

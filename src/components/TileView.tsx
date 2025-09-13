@@ -26,7 +26,7 @@ export const TileView = memo(forwardRef<GebetaMapRef, TileViewProps>(({
           <CardTitle className="text-lg sm:text-xl flex items-center justify-between text-black">
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-black" />
-              Memorize this tile...
+              Memorize this place...
             </div>
             {timeLeft > 0 && (
               <div className="text-2xl font-bold text-black">
@@ -35,7 +35,7 @@ export const TileView = memo(forwardRef<GebetaMapRef, TileViewProps>(({
             )}
           </CardTitle>
           <CardDescription className="text-gray-600">
-            You'll need to find this location on the map!
+            You'll need to find this place on the map!
           </CardDescription>
         </CardHeader>
         {isLoading && (
@@ -57,6 +57,16 @@ export const TileView = memo(forwardRef<GebetaMapRef, TileViewProps>(({
       onMapLoaded={onMapLoad}
       blockInteractions={true}
     />
+    {/* Center marker to show exact location to guess */}
+    {currentLocation && (
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <img 
+          src="/pin.png" 
+          alt="Target location" 
+          className="w-8 h-8 animate-pulse drop-shadow-lg"
+        />
+      </div>
+    )}
   </div>
 )))
 

@@ -22,7 +22,7 @@ export const PreparingGame = memo(() => (
       <CardContent className="space-y-6">
         <div className="flex items-center justify-center space-x-3">
           <Loader2 className="w-6 h-6 animate-spin text-black" />
-          <p className="text-sm text-gray-600">Loading map tiles...</p>
+          <p className="text-sm text-gray-600">Loading map...</p>
         </div>
         
         <div className="space-y-2">
@@ -32,7 +32,7 @@ export const PreparingGame = memo(() => (
           </div>
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <span>Loading map tiles</span>
+            <span>Loading map</span>
           </div>
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
