@@ -313,9 +313,7 @@ function App() {
         <div className="relative">
           {state.phase === 'preparing' && (
             <div className="absolute inset-0 z-20">
-              <PreparingGame
-                currentLocation={state.currentLocation}
-              />
+              <PreparingGame />
             </div>
           )}
           <TileView

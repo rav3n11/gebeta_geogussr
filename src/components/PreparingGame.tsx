@@ -2,11 +2,7 @@ import { memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, MapPin } from 'lucide-react'
 
-interface PreparingGameProps {
-  currentLocation: [number, number] | null
-}
-
-export const PreparingGame = memo(({ currentLocation }: PreparingGameProps) => (
+export const PreparingGame = memo(() => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
     <Card className="w-full max-w-md mx-auto shadow-lg">
       <CardHeader className="text-center space-y-4">
