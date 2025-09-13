@@ -38,8 +38,7 @@ app.get('/api/test-db', async (req, res) => {
     const client = new MongoClient(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      ssl: true,
-      sslValidate: false,
+      tls: true,
       tlsAllowInvalidCertificates: true,
       tlsAllowInvalidHostnames: true,
       serverSelectionTimeoutMS: 10000

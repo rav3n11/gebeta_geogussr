@@ -91,6 +91,10 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp
       
+      console.log('Telegram WebApp detected:', tg)
+      console.log('Init data unsafe:', tg.initDataUnsafe)
+      console.log('User data:', tg.initDataUnsafe?.user)
+      
       // Initialize the Web App
       tg.ready()
       tg.expand()
@@ -98,10 +102,27 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
       // Set up the Web App
       setWebApp(tg)
       
-      // Extract user data
-      const userData = tg.initDataUnsafe?.user
+      // Extract user data - try multiple sources
+      let userData = tg.initDataUnsafe?.user
+      
+      // If no user data in initDataUnsafe, try parsing initData manually
+      if (!userData && tg.initData) {
+        try {
+          const urlParams = new URLSearchParams(tg.initData)
+          const userParam = urlParams.get('user')
+          if (userParam) {
+            userData = JSON.parse(decodeURIComponent(userParam))
+          }
+        } catch (error) {
+          console.error('Error parsing user data from initData:', error)
+        }
+      }
+      
       if (userData) {
+        console.log('Setting user data:', userData)
         setUser(userData)
+      } else {
+        console.log('No user data found in Telegram WebApp')
       }
       
       // Mark as ready
@@ -122,6 +143,7 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
       }
     } else {
       // Development mode - create mock data
+      console.log('Running in development mode - using mock user data')
       const mockUser: TelegramUser = {
         id: 123456789,
         first_name: 'Test',

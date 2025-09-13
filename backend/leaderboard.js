@@ -29,39 +29,37 @@ const connectDB = async () => {
       minPoolSize: 1
     }
 
-    // First try with SSL enabled
+    // Try with modern TLS options
     try {
       client = new MongoClient(mongoUri, {
         ...options,
-        ssl: true,
-        sslValidate: true,
+        tls: true,
         tlsAllowInvalidCertificates: false,
         tlsAllowInvalidHostnames: false
       })
       
       await client.connect()
       await client.db('admin').command({ ping: 1 })
-      console.log('Successfully connected to MongoDB with SSL')
-    } catch (sslError) {
-      console.log('SSL connection failed, trying with relaxed SSL settings...', sslError.message)
+      console.log('Successfully connected to MongoDB with TLS')
+    } catch (tlsError) {
+      console.log('TLS connection failed, trying with relaxed TLS settings...', tlsError.message)
       
       // Close the failed client
       if (client) {
         await client.close()
       }
       
-      // Try with relaxed SSL settings
+      // Try with relaxed TLS settings
       client = new MongoClient(mongoUri, {
         ...options,
-        ssl: true,
-        sslValidate: false,
+        tls: true,
         tlsAllowInvalidCertificates: true,
         tlsAllowInvalidHostnames: true
       })
       
       await client.connect()
       await client.db('admin').command({ ping: 1 })
-      console.log('Successfully connected to MongoDB with relaxed SSL')
+      console.log('Successfully connected to MongoDB with relaxed TLS')
     }
     
     db = client.db('gebeta_geogussr')
