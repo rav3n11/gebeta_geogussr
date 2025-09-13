@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Trophy, RotateCcw } from 'lucide-react'
+import { getScoreTier } from '../utils/distance'
 
 interface ResultsProps {
   currentLocation: [number, number] | null
@@ -57,6 +58,25 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Score Tier Display */}
+          {distance != null && (
+            <div className="text-center space-y-2">
+              {(() => {
+                const tier = getScoreTier(distance);
+                return (
+                  <>
+                    <div className={`text-2xl font-bold ${tier.color}`}>
+                      {tier.tier}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {tier.description}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+          
           <div className="space-y-2">
             {distance != null && (
               <div className="flex justify-between items-center">
