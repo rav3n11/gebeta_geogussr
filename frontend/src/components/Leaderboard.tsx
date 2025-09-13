@@ -60,10 +60,14 @@ export default function Leaderboard({ }: LeaderboardProps) {
           return
       }
       
-      setLeaderboard(response.leaderboard)
+      setLeaderboard(response.leaderboard || [])
       setUserBestScore(response.userBestScore || null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load leaderboard')
+      console.error('Error loading leaderboard:', err)
+      // Set empty state instead of showing error
+      setLeaderboard([])
+      setUserBestScore(null)
+      setError(null) // Don't show error to user
     } finally {
       setLoading(false)
     }

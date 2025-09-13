@@ -1,78 +1,8 @@
 const express = require('express')
-const { MongoClient } = require('mongodb')
+const { connectDB } = require('./lib/mongodb')
 const crypto = require('crypto-js')
 
 const router = express.Router()
-
-// MongoDB connection
-let db
-let client
-const connectDB = async () => {
-  if (db) return db
-  try {
-    const mongoUri = process.env.MONGODB_URI
-    if (!mongoUri) {
-      throw new Error('MONGODB_URI environment variable is not set')
-    }
-
-    console.log('Attempting to connect to MongoDB...')
-    
-    // Try with different SSL/TLS configurations
-    const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      retryWrites: true,
-      w: 'majority',
-      serverSelectionTimeoutMS: 30000,
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 30000,
-      maxPoolSize: 10,
-      minPoolSize: 1
-    }
-
-    // Try with modern TLS options
-    try {
-      client = new MongoClient(mongoUri, {
-        ...options,
-        tls: true,
-        tlsAllowInvalidCertificates: false,
-        tlsAllowInvalidHostnames: false
-      })
-      
-      await client.connect()
-      await client.db('admin').command({ ping: 1 })
-      console.log('Successfully connected to MongoDB with TLS')
-    } catch (tlsError) {
-      console.log('TLS connection failed, trying with relaxed TLS settings...', tlsError.message)
-      
-      // Close the failed client
-      if (client) {
-        await client.close()
-      }
-      
-      // Try with relaxed TLS settings
-      client = new MongoClient(mongoUri, {
-        ...options,
-        tls: true,
-        tlsAllowInvalidCertificates: true,
-        tlsAllowInvalidHostnames: true
-      })
-      
-      await client.connect()
-      await client.db('admin').command({ ping: 1 })
-      console.log('Successfully connected to MongoDB with relaxed TLS')
-    }
-    
-    db = client.db('gebeta_geogussr')
-    return db
-  } catch (error) {
-    console.error('MongoDB connection error:', error)
-    if (client) {
-      await client.close()
-    }
-    throw error
-  }
-}
 
 // Telegram Web App validation
 function validateTelegramData(initData, botToken) {
@@ -192,7 +122,13 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     console.error('Score submission error:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    
+    // Return error response instead of 500
+    res.status(400).json({ 
+      success: false,
+      error: 'Unable to save score. Please try again later.',
+      details: 'Database temporarily unavailable'
+    })
   }
 })
 

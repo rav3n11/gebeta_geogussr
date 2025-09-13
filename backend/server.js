@@ -25,28 +25,12 @@ app.get('/health', (req, res) => {
 // MongoDB connection test endpoint
 app.get('/api/test-db', async (req, res) => {
   try {
-    const { MongoClient } = require('mongodb')
-    const mongoUri = process.env.MONGODB_URI
+    const { connectDB } = require('./lib/mongodb')
     
-    if (!mongoUri) {
-      return res.status(500).json({ error: 'MONGODB_URI not set' })
-    }
-
     console.log('Testing MongoDB connection...')
-    console.log('MongoDB URI (masked):', mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'))
     
-    const client = new MongoClient(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      tls: true,
-      tlsAllowInvalidCertificates: true,
-      tlsAllowInvalidHostnames: true,
-      serverSelectionTimeoutMS: 10000
-    })
-    
-    await client.connect()
-    await client.db('admin').command({ ping: 1 })
-    await client.close()
+    const db = await connectDB()
+    await db.admin().ping()
     
     res.json({ 
       status: 'success', 
