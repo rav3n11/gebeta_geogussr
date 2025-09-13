@@ -3,8 +3,8 @@ services:
     name: gebeta-geogussr-backend
     env: node
     plan: free
-    buildCommand: echo "Backend ready"
-    startCommand: npm start
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
