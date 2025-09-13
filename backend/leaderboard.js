@@ -5,15 +5,72 @@ const router = express.Router()
 
 // MongoDB connection
 let db
+let client
 const connectDB = async () => {
   if (db) return db
   try {
-    const client = new MongoClient(process.env.MONGODB_URI)
-    await client.connect()
+    const mongoUri = process.env.MONGODB_URI
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not set')
+    }
+
+    console.log('Attempting to connect to MongoDB...')
+    
+    // Try with different SSL/TLS configurations
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      retryWrites: true,
+      w: 'majority',
+      serverSelectionTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 30000,
+      maxPoolSize: 10,
+      minPoolSize: 1
+    }
+
+    // First try with SSL enabled
+    try {
+      client = new MongoClient(mongoUri, {
+        ...options,
+        ssl: true,
+        sslValidate: true,
+        tlsAllowInvalidCertificates: false,
+        tlsAllowInvalidHostnames: false
+      })
+      
+      await client.connect()
+      await client.db('admin').command({ ping: 1 })
+      console.log('Successfully connected to MongoDB with SSL')
+    } catch (sslError) {
+      console.log('SSL connection failed, trying with relaxed SSL settings...', sslError.message)
+      
+      // Close the failed client
+      if (client) {
+        await client.close()
+      }
+      
+      // Try with relaxed SSL settings
+      client = new MongoClient(mongoUri, {
+        ...options,
+        ssl: true,
+        sslValidate: false,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true
+      })
+      
+      await client.connect()
+      await client.db('admin').command({ ping: 1 })
+      console.log('Successfully connected to MongoDB with relaxed SSL')
+    }
+    
     db = client.db('gebeta_geogussr')
     return db
   } catch (error) {
     console.error('MongoDB connection error:', error)
+    if (client) {
+      await client.close()
+    }
     throw error
   }
 }
