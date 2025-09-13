@@ -1,6 +1,7 @@
 export interface GameState {
-  phase: 'menu' | 'tile-view' | 'countdown' | 'map-view' | 'results'
+  phase: 'menu' | 'preparing' | 'tile-view' | 'countdown' | 'map-view' | 'results'
   score: number
+  round: number
   currentLocation: [number, number] | null
   userGuess: [number, number] | null
   distance: number | null

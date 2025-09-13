@@ -9,41 +9,45 @@ interface TileViewProps {
   isLoading: boolean
   timeLeft: number
   onMapLoad: () => void
+  showOverlay?: boolean
 }
 
 export const TileView = memo(forwardRef<GebetaMapRef, TileViewProps>(({ 
   currentLocation, 
   isLoading, 
   timeLeft, 
-  onMapLoad 
+  onMapLoad,
+  showOverlay = false
 }, ref) => (
   <div className="relative w-full h-screen overflow-hidden bg-gray-50">
-    <Card className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-auto sm:max-w-sm z-10 shadow-lg frosted-glass">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg sm:text-xl flex items-center justify-between text-black">
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-black" />
-            Memorize this tile...
-          </div>
-          {timeLeft > 0 && (
-            <div className="text-2xl font-bold text-black">
-              {timeLeft}
+    {!showOverlay && (
+      <Card className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-auto sm:max-w-sm z-10 shadow-lg frosted-glass">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg sm:text-xl flex items-center justify-between text-black">
+            <div className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-black" />
+              Memorize this tile...
             </div>
-          )}
-        </CardTitle>
-        <CardDescription className="text-gray-600">
-          You'll need to find this location on the map!
-        </CardDescription>
-      </CardHeader>
-      {isLoading && (
-        <CardContent className="pt-0">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-black"></div>
-            <p className="text-sm text-gray-600">Loading map...</p>
-          </div>
-        </CardContent>
-      )}
-    </Card>
+            {timeLeft > 0 && (
+              <div className="text-2xl font-bold text-black">
+                {timeLeft}
+              </div>
+            )}
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            You'll need to find this location on the map!
+          </CardDescription>
+        </CardHeader>
+        {isLoading && (
+          <CardContent className="pt-0">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-black"></div>
+              <p className="text-sm text-gray-600">Loading map...</p>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+    )}
     <GebetaMap
       ref={ref}
       apiKey={import.meta.env.VITE_GEBETA_MAPS_API_KEY}

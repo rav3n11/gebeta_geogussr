@@ -5,6 +5,7 @@ import { getRandomCoordinates } from './utils/locations'
 import type { GameSettings } from './types/game'
 import { DEFAULT_SETTINGS, AVAILABLE_CITIES } from './types/game'
 import { MainMenu } from './components/MainMenu'
+import { PreparingGame } from './components/PreparingGame'
 import { TileView } from './components/TileView'
 import { MapView } from './components/MapView'
 import { Results } from './components/Results'
@@ -12,7 +13,7 @@ import { Settings } from './components/Settings'
 
 function App() {
   const mapRef = useRef<GebetaMapRef>(null)
-  const { state, startGame, startCountdown, showMap, setGuess, setLocation, showResults } = useGameState()
+  const { state, startGame, startTileView, showMap, setGuess, setLocation, showResults } = useGameState()
   const [tileViewTimeLeft, setTileViewTimeLeft] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const isLoadingRef = useRef(false)
@@ -77,16 +78,28 @@ function App() {
     }))
   }
 
-  // Set a target location when game starts (only once)
+  // Set a target location when preparing phase starts (only once)
   useEffect(() => {
-    if (state.phase === 'tile-view' && !hasStarted) {
+    if (state.phase === 'preparing' && !hasStarted) {
       setHasStarted(true)
-      setIsLoading(true)
-      isLoadingRef.current = true
       const randomLocation = getRandomCoordinates(settings.selectedCities)
       setLocation(randomLocation)
     }
   }, [state.phase, hasStarted, setLocation])
+
+  // Transition from preparing to tile-view when map loads
+  useEffect(() => {
+    if (state.phase === 'preparing' && mapLoaded && state.currentLocation) {
+      // Add a small delay to show the preparing phase
+      const timer = setTimeout(() => {
+        startTileView()
+        setIsLoading(true)
+        isLoadingRef.current = true
+      }, 1500) // 1.5 second delay to show preparing phase
+      
+      return () => clearTimeout(timer)
+    }
+  }, [state.phase, mapLoaded, state.currentLocation, startTileView])
 
   // Handle tile view timer - wait for map to load, then countdown
   useEffect(() => {
@@ -149,21 +162,6 @@ function App() {
     }
   }, [state.phase])
 
-  // Calculate bounds to fit both markers
-  const calculateBounds = (point1: [number, number], point2: [number, number]) => {
-    const lngs = [point1[0], point2[0]]
-    const lats = [point1[1], point2[1]]
-    
-    const minLng = Math.min(...lngs)
-    const maxLng = Math.max(...lngs)
-    const minLat = Math.min(...lats)
-    const maxLat = Math.max(...lats)
-    
-    return {
-      center: [(minLng + maxLng) / 2, (minLat + maxLat) / 2] as [number, number],
-      zoom: Math.min(12, Math.max(6, 15 - Math.log2(Math.max(maxLng - minLng, maxLat - minLat) * 100)))
-    }
-  }
 
   // Draw results visualization
   useEffect(() => {
@@ -311,14 +309,24 @@ function App() {
           bestScore={bestScore}
         />
       )}
-      {state.phase === 'tile-view' && (
-        <TileView
-          ref={mapRef}
-          currentLocation={state.currentLocation}
-          isLoading={isLoading}
-          timeLeft={tileViewTimeLeft}
-          onMapLoad={handleMapLoad}
-        />
+      {(state.phase === 'preparing' || state.phase === 'tile-view') && (
+        <div className="relative">
+          {state.phase === 'preparing' && (
+            <div className="absolute inset-0 z-20">
+              <PreparingGame
+                currentLocation={state.currentLocation}
+              />
+            </div>
+          )}
+          <TileView
+            ref={mapRef}
+            currentLocation={state.currentLocation}
+            isLoading={isLoading}
+            timeLeft={tileViewTimeLeft}
+            onMapLoad={handleMapLoad}
+            showOverlay={state.phase === 'preparing'}
+          />
+        </div>
       )}
       {state.phase === 'map-view' && (
         <MapView
