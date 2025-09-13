@@ -43,5 +43,27 @@ export function getRandomLocation(selectedCities?: string[]): Location {
 }
 
 export function getRandomCoordinates(selectedCities?: string[]): [number, number] {
-  return getRandomLocation(selectedCities).coordinates
+  const location = getRandomLocation(selectedCities)
+  return getRandomCoordinatesInCity(location.coordinates)
+}
+
+export function getRandomCoordinatesInCity(cityCenter: [number, number]): [number, number] {
+  const [centerLng, centerLat] = cityCenter
+  
+  // Generate random offset within a reasonable radius (about 5-15km)
+  // 1 degree ≈ 111km, so 0.05-0.15 degrees gives us 5-15km radius
+  const maxOffset = 0.1 // ~11km radius
+  const minOffset = 0.02 // ~2km radius
+  
+  const offset = minOffset + Math.random() * (maxOffset - minOffset)
+  const angle = Math.random() * 2 * Math.PI
+  
+  // Calculate random coordinates within the circle
+  const offsetLng = offset * Math.cos(angle) / Math.cos(centerLat * Math.PI / 180)
+  const offsetLat = offset * Math.sin(angle)
+  
+  const randomLng = centerLng + offsetLng
+  const randomLat = centerLat + offsetLat
+  
+  return [randomLng, randomLat]
 } 

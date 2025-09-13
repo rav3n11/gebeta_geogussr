@@ -16,7 +16,7 @@ export function useGameState() {
     isSubmitting: false
   })
 
-  const startGame = () => setState(prev => ({ ...prev, phase: 'preparing' }))
+  const startGame = () => setState(prev => ({ ...prev, phase: 'preparing', score: 0 }))
   const startTileView = () => setState(prev => ({ ...prev, phase: 'tile-view' }))
   const startCountdown = () => setState(prev => ({ ...prev, phase: 'countdown' }))
   const showMap = () => setState(prev => ({ ...prev, phase: 'map-view' }))

@@ -27,7 +27,7 @@ export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps)
                     {city.name}
                   </CardTitle>
                 </CardHeader>
-                
+
                 <CardContent className="flex-1 flex flex-col justify-between">
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2">
@@ -37,9 +37,9 @@ export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps)
                       </span>
                     </div>
                   </div>
-                  
-                  <Button 
-                    size="sm" 
+
+                  <Button
+                    size="sm"
                     className="w-full bg-black text-white hover:bg-gray-800 group-hover:bg-gray-700 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation()
@@ -53,6 +53,19 @@ export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps)
               </Card>
             )
           })}
+          
+          {/* More cities coming soon entry */}
+          <div className="flex-shrink-0 w-64 h-42 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-2xl">⋯</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700 mb-1">More Cities</h3>
+                <p className="text-sm text-gray-500">Coming Soon</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
