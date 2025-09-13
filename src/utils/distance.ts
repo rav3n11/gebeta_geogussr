@@ -27,41 +27,23 @@ export function calculateDistance(
 }
 
 /**
- * Calculate score based on distance using a logarithmic scale
- * This system better rewards accuracy and penalizes random guesses
+ * Calculate score based on distance using a simple linear scale
+ * This system provides clear differentiation between accuracy levels
  * @param distance Distance in kilometers
- * @returns Score (0-5000)
+ * @returns Score (0-1000)
  */
 export function calculateScore(distance: number): number {
-  // Maximum score for perfect guess (within 1km)
-  const maxScore = 5000;
+  // Maximum score for perfect guess
+  const maxScore = 1000;
   
-  // Minimum score threshold (beyond 1000km gets 0 points)
-  const maxDistance = 1000;
+  // Score drops by 20 points per kilometer
+  const pointsPerKm = 20;
   
-  // If distance is beyond threshold, return 0
-  if (distance >= maxDistance) {
-    return 0;
-  }
+  // Calculate score: maxScore - (distance * pointsPerKm)
+  const score = maxScore - (distance * pointsPerKm);
   
-  // For very close guesses (within 1km), give maximum score
-  if (distance <= 1) {
-    return maxScore;
-  }
-  
-  // Use logarithmic scale for better distribution
-  // This gives much higher scores for close guesses and rapidly decreases for far ones
-  const logDistance = Math.log10(distance);
-  const maxLogDistance = Math.log10(maxDistance);
-  
-  // Normalize the logarithmic distance to 0-1 range
-  const normalizedDistance = logDistance / maxLogDistance;
-  
-  // Apply exponential decay for better score distribution
-  // This ensures close guesses get much higher scores
-  const score = maxScore * Math.pow(1 - normalizedDistance, 2.5);
-  
-  return Math.round(Math.max(0, score));
+  // Return 0 if score would be negative
+  return Math.max(0, Math.round(score));
 }
 
 /**
@@ -70,19 +52,17 @@ export function calculateScore(distance: number): number {
  * @returns Score tier description
  */
 export function getScoreTier(distance: number): { tier: string; color: string; description: string } {
-  if (distance <= 0.1) {
+  if (distance <= 1) {
     return { tier: "Perfect!", color: "text-green-600", description: "Incredible accuracy!" };
-  } else if (distance <= 1) {
-    return { tier: "Excellent", color: "text-green-500", description: "Outstanding guess!" };
   } else if (distance <= 5) {
+    return { tier: "Excellent", color: "text-green-500", description: "Outstanding guess!" };
+  } else if (distance <= 10) {
     return { tier: "Great", color: "text-blue-500", description: "Very close!" };
   } else if (distance <= 25) {
     return { tier: "Good", color: "text-yellow-500", description: "Nice try!" };
-  } else if (distance <= 100) {
+  } else if (distance <= 40) {
     return { tier: "Fair", color: "text-orange-500", description: "Getting warmer..." };
-  } else if (distance <= 500) {
-    return { tier: "Poor", color: "text-red-500", description: "Not quite there" };
   } else {
-    return { tier: "Miss", color: "text-red-600", description: "Better luck next time!" };
+    return { tier: "Miss", color: "text-red-500", description: "Better luck next time!" };
   }
 } 
