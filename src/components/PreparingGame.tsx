@@ -29,14 +29,6 @@ export const PreparingGame = memo(({ currentLocation }: PreparingGameProps) => (
           <p className="text-sm text-gray-600">Loading map tiles...</p>
         </div>
         
-        {currentLocation && (
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              Location selected: {currentLocation[1].toFixed(4)}, {currentLocation[0].toFixed(4)}
-            </p>
-          </div>
-        )}
-        
         <div className="space-y-2">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
