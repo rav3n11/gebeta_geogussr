@@ -32,6 +32,11 @@ function App() {
     const saved = localStorage.getItem('bestScore')
     return saved ? parseInt(saved) : 0
   })
+  const [cityScores, setCityScores] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('cityScores')
+    return saved ? JSON.parse(saved) : {}
+  })
+  const [currentPlayingCity, setCurrentPlayingCity] = useState<string | null>(null)
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -45,6 +50,18 @@ function App() {
       localStorage.setItem('bestScore', state.score.toString())
     }
   }, [state.score, bestScore])
+
+  // Track and save city-specific scores
+  useEffect(() => {
+    if (currentPlayingCity && state.score > (cityScores[currentPlayingCity] || 0)) {
+      const newCityScores = {
+        ...cityScores,
+        [currentPlayingCity]: state.score
+      }
+      setCityScores(newCityScores)
+      localStorage.setItem('cityScores', JSON.stringify(newCityScores))
+    }
+  }, [state.score, currentPlayingCity, cityScores])
 
   const updateSettings = (newSettings: Partial<GameSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }))
@@ -220,8 +237,22 @@ function App() {
 
 
   const handleStartGame = useCallback(() => {
+    setCurrentPlayingCity(null) // Reset to random play
+    setHasStarted(false) // Reset to allow new location selection
     startGame()
   }, [startGame])
+
+  const handleStartSpecificCity = useCallback((cityName: string) => {
+    setCurrentPlayingCity(cityName)
+    setHasStarted(false) // Reset to allow new location selection
+    // Set the selected city in settings temporarily
+    const citySettings = {
+      ...settings,
+      selectedCities: [cityName]
+    }
+    setSettings(citySettings)
+    startGame()
+  }, [settings, startGame])
 
   const handleOpenSettings = useCallback(() => {
     setShowSettings(true)
@@ -274,8 +305,19 @@ function App() {
       timerRef.current = null
     }
     
+    // If playing a specific city, replay the same city
+    if (currentPlayingCity) {
+      const citySettings = {
+        ...settings,
+        selectedCities: [currentPlayingCity]
+      }
+      setSettings(citySettings)
+    } else {
+      setCurrentPlayingCity(null)
+    }
+    
     startGame()
-  }, [startGame])
+  }, [startGame, currentPlayingCity, settings])
 
   const handleMainMenu = useCallback(() => {
     // Reset all game state
@@ -305,8 +347,10 @@ function App() {
       {state.phase === 'menu' && (
         <MainMenu
           onStartGame={handleStartGame}
+          onStartSpecificCity={handleStartSpecificCity}
           onOpenSettings={handleOpenSettings}
           bestScore={bestScore}
+          cityScores={cityScores}
         />
       )}
       {(state.phase === 'preparing' || state.phase === 'tile-view') && (

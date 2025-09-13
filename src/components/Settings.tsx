@@ -33,7 +33,12 @@ export const Settings = memo(({
   <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50">
     <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-2xl font-bold text-black">Settings</CardTitle>
+        <div>
+          <CardTitle className="text-2xl font-bold text-black">Free Play Settings</CardTitle>
+          <p className="text-sm text-gray-600 mt-1">
+            These settings only apply to random place selection
+          </p>
+        </div>
         <Button
           variant="ghost"
           size="sm"
