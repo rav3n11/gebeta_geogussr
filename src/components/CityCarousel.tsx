@@ -13,13 +13,13 @@ export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps)
   return (
     <div className="w-full">
       <div className="relative">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory" style={{ scrollSnapType: 'x mandatory' }}>
           {AVAILABLE_CITIES.map((city) => {
             const cityScore = cityScores?.[city.name] || 0
             return (
               <Card 
                 key={city.name} 
-                className="flex-shrink-0 w-64 h-42 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all duration-200 cursor-pointer group flex flex-col"
+                className="flex-shrink-0 w-64 h-42 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all duration-200 cursor-pointer group flex flex-col snap-start"
                 onClick={() => onPlayCity(city.name)}
               >
                 <CardHeader className="pb-2">
@@ -55,7 +55,7 @@ export const CityCarousel = memo(({ onPlayCity, cityScores }: CityCarouselProps)
           })}
           
           {/* More cities coming soon entry */}
-          <div className="flex-shrink-0 w-64 h-42 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
+          <div className="flex-shrink-0 w-64 h-42 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-lg snap-start">
             <div className="text-center space-y-3">
               <div className="w-12 h-12 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-2xl">⋯</span>
