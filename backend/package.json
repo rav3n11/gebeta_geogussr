@@ -1,0 +1,20 @@
+{
+  "name": "gebeta-geogussr-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Gebeta GeoGuessr",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "mongodb": "^6.19.0",
+    "crypto-js": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
