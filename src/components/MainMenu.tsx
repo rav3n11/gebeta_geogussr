@@ -24,7 +24,7 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
   if (showCitySelection) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-6xl mx-auto shadow-lg">
+        <Card className="w-full max-w-md mx-auto shadow-lg">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
               <Button
