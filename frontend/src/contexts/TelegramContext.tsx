@@ -87,84 +87,127 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    // Check if we're running in Telegram Web App
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp
-      
-      console.log('Telegram WebApp detected:', tg)
-      console.log('Init data unsafe:', tg.initDataUnsafe)
-      console.log('User data:', tg.initDataUnsafe?.user)
-      
-      // Initialize the Web App
-      tg.ready()
-      tg.expand()
-      
-      // Set up the Web App
-      setWebApp(tg)
-      
-      // Extract user data - try multiple sources
-      let userData = tg.initDataUnsafe?.user
-      
-      // If no user data in initDataUnsafe, try parsing initData manually
-      if (!userData && tg.initData) {
-        try {
-          const urlParams = new URLSearchParams(tg.initData)
-          const userParam = urlParams.get('user')
-          if (userParam) {
-            userData = JSON.parse(decodeURIComponent(userParam))
+    const initializeTelegram = () => {
+      // Check if we're running in Telegram Web App
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp
+        
+        console.log('Telegram WebApp detected:', tg)
+        console.log('Init data unsafe:', tg.initDataUnsafe)
+        console.log('User data:', tg.initDataUnsafe?.user)
+        console.log('Init data:', tg.initData)
+        console.log('Platform:', tg.platform)
+        console.log('Version:', tg.version)
+        
+        // Initialize the Web App
+        tg.ready()
+        tg.expand()
+        
+        // Set up the Web App
+        setWebApp(tg)
+        
+        // Extract user data - try multiple sources
+        let userData = tg.initDataUnsafe?.user
+        
+        // If no user data in initDataUnsafe, try parsing initData manually
+        if (!userData && tg.initData) {
+          try {
+            const urlParams = new URLSearchParams(tg.initData)
+            const userParam = urlParams.get('user')
+            if (userParam) {
+              userData = JSON.parse(decodeURIComponent(userParam))
+              console.log('Parsed user data from initData:', userData)
+            }
+          } catch (error) {
+            console.error('Error parsing user data from initData:', error)
           }
-        } catch (error) {
-          console.error('Error parsing user data from initData:', error)
         }
-      }
-      
-      if (userData) {
-        console.log('Setting user data:', userData)
-        setUser(userData)
-      } else {
-        console.log('No user data found in Telegram WebApp - using fallback')
-        // Fallback user data when Telegram WebApp is detected but no user data
-        const fallbackUser: TelegramUser = {
-          id: 999999999,
-          first_name: 'Telegram',
-          last_name: 'User',
-          username: 'telegramuser',
-          language_code: 'en',
-          is_premium: false
+        
+        if (userData) {
+          console.log('Setting real user data:', userData)
+          setUser(userData)
+        } else {
+          console.log('No user data found in Telegram WebApp - using fallback')
+          // Fallback user data when Telegram WebApp is detected but no user data
+          const fallbackUser: TelegramUser = {
+            id: 999999999,
+            first_name: 'Telegram',
+            last_name: 'User',
+            username: 'telegramuser',
+            language_code: 'en',
+            is_premium: false
+          }
+          setUser(fallbackUser)
         }
-        setUser(fallbackUser)
-      }
-      
-      // Mark as ready
-      setIsReady(true)
-      
-      // Set up theme
-      document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff'
-      
-      // Handle theme changes
-      const handleThemeChanged = () => {
+        
+        // Mark as ready
+        setIsReady(true)
+        
+        // Set up theme
         document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff'
+        
+        // Handle theme changes
+        const handleThemeChanged = () => {
+          document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff'
+        }
+        
+        tg.onEvent('themeChanged', handleThemeChanged)
+        
+        return () => {
+          tg.offEvent('themeChanged', handleThemeChanged)
+        }
+      } else {
+        // Not in Telegram WebApp - check if we're in production
+        const isProduction = import.meta.env.PROD
+        const isSimulateProduction = import.meta.env.VITE_SIMULATE_PRODUCTION === 'true'
+        
+        console.log('Not in Telegram WebApp')
+        console.log('Production mode:', isProduction)
+        console.log('Simulate production:', isSimulateProduction)
+        
+        if (isProduction || isSimulateProduction) {
+          // Production mode - use fallback user like in Telegram
+          console.log('Using production fallback user')
+          const fallbackUser: TelegramUser = {
+            id: 999999999,
+            first_name: 'Telegram',
+            last_name: 'User',
+            username: 'telegramuser',
+            language_code: 'en',
+            is_premium: false
+          }
+          setUser(fallbackUser)
+        } else {
+          // Development mode - create mock data
+          console.log('Using development mock user')
+          const mockUser: TelegramUser = {
+            id: 123456789,
+            first_name: 'Development',
+            last_name: 'User',
+            username: 'devuser',
+            language_code: 'en',
+            is_premium: false
+          }
+          setUser(mockUser)
+        }
+        
+        setIsReady(true)
       }
-      
-      tg.onEvent('themeChanged', handleThemeChanged)
-      
-      return () => {
-        tg.offEvent('themeChanged', handleThemeChanged)
+    }
+
+    // Try to initialize immediately
+    initializeTelegram()
+
+    // Also try after a short delay in case Telegram WebApp loads asynchronously
+    const timeoutId = setTimeout(() => {
+      if (!webApp) {
+        console.log('Retrying Telegram WebApp detection after timeout')
+        initializeTelegram()
       }
-    } else {
-      // Development mode - create mock data
-      console.log('Running in development mode - using mock user data')
-      const mockUser: TelegramUser = {
-        id: 123456789,
-        first_name: 'Development',
-        last_name: 'User',
-        username: 'devuser',
-        language_code: 'en',
-        is_premium: false
-      }
-      
-      setUser(mockUser)
-      setIsReady(true)
+    }, 1000)
+
+    return () => {
+      clearTimeout(timeoutId)
     }
   }, [])
 
