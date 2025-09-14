@@ -101,7 +101,7 @@ export default function LeaderboardPreview({ onViewFull }: LeaderboardPreviewPro
         ) : error ? (
           <div className="text-center py-3 text-gray-500 text-xs">
             <p>{error}</p>
-            <Button variant="outline" size="sm" onClick={loadTopScores} className="mt-2 text-xs">
+            <Button variant="outline" size="sm" onClick={() => loadTopScores(true)} className="mt-2 text-xs">
               Retry
             </Button>
           </div>
