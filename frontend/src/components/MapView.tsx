@@ -12,13 +12,15 @@ interface MapViewProps {
   isSubmitting: boolean
   onMapClick: (lngLat: [number, number]) => void
   onSubmitGuess: () => void
+  onMapLoad?: () => void
 }
 
 export const MapView = memo(forwardRef<GebetaMapRef, MapViewProps>(({ 
   currentMarker, 
   isSubmitting, 
   onMapClick, 
-  onSubmitGuess 
+  onSubmitGuess,
+  onMapLoad
 }, ref) => (
   <div className="relative w-full h-screen overflow-hidden bg-gray-50">
     <Card className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-auto sm:max-w-sm z-10 shadow-lg frosted-glass">
@@ -58,6 +60,7 @@ export const MapView = memo(forwardRef<GebetaMapRef, MapViewProps>(({
       center={[38.7685, 9.0161]}
       zoom={6}
       onMapClick={onMapClick}
+      onMapLoaded={onMapLoad}
       style={{ width: '100%', height: '100%' }}
     />
   </div>

@@ -22,6 +22,7 @@ function AppContent() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const isLoadingRef = useRef(false)
   const timeLeftRef = useRef(0)
+  const preparingTransitionRef = useRef(false)
   const [currentMarker, setCurrentMarker] = useState<[number, number] | null>(null)
   const [hasStarted, setHasStarted] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
@@ -129,32 +130,46 @@ function AppContent() {
     }))
   }
 
-  // Set a target location when preparing phase starts (only once)
+  // Set a target location when preparing phase starts
   useEffect(() => {
     if (state.phase === 'preparing' && !hasStarted) {
+      console.log('Preparing phase: setting location')
       setHasStarted(true)
       const randomLocation = getRandomCoordinates(settings.selectedCities)
+      console.log('Random location:', randomLocation)
       setLocation(randomLocation)
     }
   }, [state.phase, hasStarted, setLocation])
 
-  // Transition from preparing to tile-view when map loads
+  // Transition from preparing to tile-view after delay
   useEffect(() => {
-    if (state.phase === 'preparing' && mapLoaded && state.currentLocation) {
-      // Add a small delay to show the preparing phase
+    if (state.phase === 'preparing' && hasStarted && state.currentLocation && !preparingTransitionRef.current) {
+      console.log('Starting preparing transition timer')
+      preparingTransitionRef.current = true
+      
       const timer = setTimeout(() => {
+        console.log('Transitioning to tile-view')
         startTileView()
         setIsLoading(true)
         isLoadingRef.current = true
       }, 1500) // 1.5 second delay to show preparing phase
       
-      return () => clearTimeout(timer)
+      return () => {
+        console.log('Cleaning up preparing timer')
+        clearTimeout(timer)
+      }
     }
-  }, [state.phase, mapLoaded, state.currentLocation, startTileView])
+  }, [state.phase, hasStarted, state.currentLocation, startTileView])
 
-  // Handle tile view timer - wait for map to load, then countdown
+  // Handle tile view timer - start countdown when tile view begins
   useEffect(() => {
-    if (state.phase === 'tile-view' && hasStarted && mapLoaded && isLoadingRef.current) {
+    console.log('Tile-view useEffect triggered:', { 
+      phase: state.phase, 
+      hasStarted, 
+      isLoadingRef: isLoadingRef.current 
+    })
+    if (state.phase === 'tile-view' && hasStarted && isLoadingRef.current) {
+      console.log('Tile-view phase: starting countdown')
       setIsLoading(false)
       isLoadingRef.current = false
       
@@ -182,7 +197,7 @@ function AppContent() {
         }
       }, 1000)
     }
-  }, [state.phase, hasStarted, mapLoaded, settings.tileViewDuration])
+  }, [state.phase, hasStarted, settings.tileViewDuration])
 
   // Cleanup timer on unmount or phase change
   useEffect(() => {
@@ -271,14 +286,17 @@ function AppContent() {
 
 
   const handleStartGame = useCallback(() => {
+    console.log('Starting game - resetting state')
     setCurrentPlayingCity(null) // Reset to random play
     setHasStarted(false) // Reset to allow new location selection
+    preparingTransitionRef.current = false // Reset transition flag
     startGame()
   }, [startGame])
 
   const handleStartSpecificCity = useCallback((cityName: string) => {
     setCurrentPlayingCity(cityName)
     setHasStarted(false) // Reset to allow new location selection
+    preparingTransitionRef.current = false // Reset transition flag
     // Set the selected city in settings temporarily
     const citySettings = {
       ...settings,
@@ -422,6 +440,7 @@ function AppContent() {
           isSubmitting={isSubmitting}
           onMapClick={handleMapClick}
           onSubmitGuess={handleSubmitGuess}
+          onMapLoad={handleMapLoad}
         />
       )}
       {state.phase === 'results' && (
