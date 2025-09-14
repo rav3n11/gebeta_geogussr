@@ -77,13 +77,17 @@ function validateTelegramData(initData, botToken) {
 
 // POST /api/scores - Submit a score
 router.post('/', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] ===== POST /api/scores ENDPOINT HIT =====`)
   console.log(`[${new Date().toISOString()}] POST /api/scores - Score submission request`)
   console.log(`Request body:`, { 
     score: req.body.score, 
     city: req.body.city, 
     gameMode: req.body.gameMode,
-    hasInitData: !!req.body.initData
+    hasInitData: !!req.body.initData,
+    distance: req.body.distance,
+    roundScore: req.body.roundScore
   })
+  console.log(`Full request body:`, JSON.stringify(req.body, null, 2))
   
   try {
     const { 
@@ -108,16 +112,23 @@ router.post('/', async (req, res) => {
       // Development mode - extract user data from request body
       console.log(`[${new Date().toISOString()}] POST /api/scores - Development mode - using request user data`)
       const { userData } = req.body
+      console.log(`User data from request:`, userData)
       
       if (!userData) {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - No user data provided in development mode`)
         return res.status(400).json({ error: 'User data required in development mode' })
       }
       
       user = userData
+      console.log(`Using user data:`, user)
     } else {
       // Production mode - validate Telegram data
+      console.log(`[${new Date().toISOString()}] POST /api/scores - Production mode - validating Telegram data`)
       const botToken = process.env.TELEGRAM_BOT_TOKEN
+      console.log(`Bot token available:`, !!botToken)
+      
       if (!botToken) {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - Bot token not configured`)
         return res.status(500).json({ error: 'Bot token not configured' })
       }
 
@@ -129,17 +140,23 @@ router.post('/', async (req, res) => {
       // Parse user data from initData
       const urlParams = new URLSearchParams(initData)
       const userParam = urlParams.get('user')
+      console.log(`User param from initData:`, userParam)
+      
       if (!userParam) {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - User data not found in initData`)
         return res.status(400).json({ error: 'User data not found in initData' })
       }
 
       try {
         user = JSON.parse(userParam)
+        console.log(`Parsed user from initData:`, user)
       } catch (error) {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - Error parsing user data:`, error.message)
         return res.status(400).json({ error: 'Invalid user data format' })
       }
 
       if (!user.id || !user.first_name) {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - Invalid user data - missing id or first_name`)
         return res.status(400).json({ error: 'Invalid user data' })
       }
     }
@@ -160,14 +177,17 @@ router.post('/', async (req, res) => {
     }
 
     // Save to database
+    console.log(`[${new Date().toISOString()}] POST /api/scores - Connecting to database`)
     const database = await connectDB()
     const scoresCollection = database.collection('scores')
+    console.log(`[${new Date().toISOString()}] POST /api/scores - Database connected, checking for existing score`)
     
     // Check if user already has a score for this gameMode
     const existingScore = await scoresCollection.findOne({
       userId: user.id,
       gameMode: gameMode
     })
+    console.log(`Existing score for user ${user.id} (${gameMode}):`, existingScore)
     
     let result
     if (existingScore) {
@@ -216,6 +236,7 @@ router.post('/', async (req, res) => {
       rank: index + 1
     }))
 
+    console.log(`[${new Date().toISOString()}] POST /api/scores - Sending success response`)
     res.status(200).json({
       success: true,
       scoreId: result.insertedId,
