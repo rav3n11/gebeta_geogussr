@@ -90,8 +90,41 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
   useEffect(() => {
     const initializeTelegram = () => {
       // Check if we're running in Telegram Web App
+      console.log('Checking for Telegram WebApp...')
+      console.log('window.Telegram:', window.Telegram)
+      console.log('window.Telegram?.WebApp:', window.Telegram?.WebApp)
+      console.log('Document ready state:', document.readyState)
+      
+      // Try multiple detection methods
+      let tg = null
+      
+      // Method 1: Direct check
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp
+        tg = window.Telegram.WebApp
+        console.log('Telegram WebApp detected via direct check!')
+      }
+      
+      // Method 2: Try calling expand() method (Telegram-specific)
+      if (!tg && typeof window !== 'undefined' && window.Telegram) {
+        try {
+          window.Telegram.WebApp.expand()
+          tg = window.Telegram.WebApp
+          console.log('Telegram WebApp detected via expand() method!')
+        } catch (error) {
+          console.log('expand() method failed:', error)
+        }
+      }
+      
+      // Method 3: Check for Telegram-specific properties
+      if (!tg && typeof window !== 'undefined' && window.Telegram) {
+        const telegramObj = window.Telegram as any
+        if (telegramObj.WebApp || telegramObj.webApp) {
+          tg = telegramObj.WebApp || telegramObj.webApp
+          console.log('Telegram WebApp detected via property check!')
+        }
+      }
+      
+      if (tg) {
         
         console.log('Telegram WebApp detected:', tg)
         console.log('Init data unsafe:', tg.initDataUnsafe)
@@ -208,16 +241,77 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
     // Try to initialize immediately
     initializeTelegram()
 
-    // Also try after a short delay in case Telegram WebApp loads asynchronously
-    const timeoutId = setTimeout(() => {
+    // Also try after multiple delays in case Telegram WebApp loads asynchronously
+    const timeoutIds = [
+      setTimeout(() => {
+        if (!webApp) {
+          console.log('Retrying Telegram WebApp detection after 500ms')
+          initializeTelegram()
+        }
+      }, 500),
+      setTimeout(() => {
+        if (!webApp) {
+          console.log('Retrying Telegram WebApp detection after 1000ms')
+          initializeTelegram()
+        }
+      }, 1000),
+      setTimeout(() => {
+        if (!webApp) {
+          console.log('Retrying Telegram WebApp detection after 2000ms')
+          initializeTelegram()
+        }
+      }, 2000),
+      setTimeout(() => {
+        if (!webApp) {
+          console.log('Retrying Telegram WebApp detection after 5000ms')
+          initializeTelegram()
+        }
+      }, 5000)
+    ]
+
+    // Also try when the window loads completely
+    const handleLoad = () => {
       if (!webApp) {
-        console.log('Retrying Telegram WebApp detection after timeout')
+        console.log('Retrying Telegram WebApp detection on window load')
         initializeTelegram()
       }
-    }, 1000)
+    }
+    
+    // Try when DOM is ready
+    const handleDOMContentLoaded = () => {
+      if (!webApp) {
+        console.log('Retrying Telegram WebApp detection on DOMContentLoaded')
+        initializeTelegram()
+      }
+    }
+    
+    window.addEventListener('load', handleLoad)
+    document.addEventListener('DOMContentLoaded', handleDOMContentLoaded)
+    
+    // Also try when the Telegram script might load
+    const checkTelegramScript = () => {
+      if (!webApp && window.Telegram?.WebApp) {
+        console.log('Telegram script loaded, retrying detection')
+        initializeTelegram()
+      }
+    }
+    
+    // Check periodically for Telegram script
+    const scriptCheckInterval = setInterval(() => {
+      if (window.Telegram?.WebApp) {
+        clearInterval(scriptCheckInterval)
+        checkTelegramScript()
+      }
+    }, 100)
+    
+    // Clear interval after 10 seconds
+    setTimeout(() => clearInterval(scriptCheckInterval), 10000)
 
     return () => {
-      clearTimeout(timeoutId)
+      timeoutIds.forEach(id => clearTimeout(id))
+      window.removeEventListener('load', handleLoad)
+      document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded)
+      clearInterval(scriptCheckInterval)
     }
   }, [])
 
