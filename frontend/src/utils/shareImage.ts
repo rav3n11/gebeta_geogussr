@@ -223,8 +223,39 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
   const webApp = (window as any).Telegram?.WebApp
   
   if (webApp) {
-    // Use Telegram's openLink method with try_instant_view option
-    webApp.openLink(dataUrl, { try_instant_view: true })
+    // Try to use the downloadFile method if available
+    if (webApp.downloadFile) {
+      try {
+        // Convert data URL to blob
+        fetch(dataUrl).then(response => response.blob()).then(blob => {
+          // Create a temporary URL for the blob
+          const blobUrl = URL.createObjectURL(blob)
+          
+          // Use Telegram's downloadFile method
+          webApp.downloadFile({
+            url: blobUrl,
+            filename: fileName
+          }, (success: boolean) => {
+            if (success) {
+              webApp.showAlert('Download started!')
+            } else {
+              webApp.showAlert('Download failed. Try again.')
+            }
+            // Clean up the blob URL
+            URL.revokeObjectURL(blobUrl)
+          })
+        }).catch(() => {
+          // Fallback to bot integration
+          downloadViaBot(webApp, dataUrl, fileName)
+        })
+      } catch (error) {
+        // Fallback to bot integration
+        downloadViaBot(webApp, dataUrl, fileName)
+      }
+    } else {
+      // Fallback to bot integration
+      downloadViaBot(webApp, dataUrl, fileName)
+    }
     return
   }
   
@@ -235,6 +266,30 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+const downloadViaBot = (webApp: any, dataUrl: string, fileName: string) => {
+  try {
+    // Convert data URL to base64
+    const base64 = dataUrl.split(',')[1]
+    
+    // Send image data to bot for download
+    webApp.sendData(JSON.stringify({
+      type: 'download_score',
+      action: 'download_image',
+      image: base64,
+      filename: fileName,
+      timestamp: Date.now()
+    }))
+    
+    // Show confirmation
+    webApp.showAlert('Image sent to bot! Check your chat to download the image.')
+    
+  } catch (error) {
+    console.error('Error downloading via bot:', error)
+    // Final fallback: show alert with instructions
+    webApp.showAlert('Image ready! Long-press the image above to save it to your device.')
+  }
 }
 
 export const shareImage = async (data: ShareImageData) => {
@@ -291,7 +346,7 @@ const shareInTelegram = async (dataUrl: string, data: ShareImageData) => {
       // Create a shareable URL with the text
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
       
-      // Use the correct Telegram method from the documentation
+      // Use the correct Telegram method
       webApp.openTelegramLink(shareUrl)
       
     } else {
