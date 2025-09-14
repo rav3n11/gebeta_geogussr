@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { GameState } from '../types/game'
 import { calculateDistance, calculateScore } from '../utils/distance'
 
@@ -16,23 +16,40 @@ export function useGameState() {
     isSubmitting: false
   })
 
-  const startGame = () => setState(prev => ({ 
-    ...prev, 
-    phase: 'preparing', 
-    score: 0,
-    currentLocation: null,
-    userGuess: null,
-    distance: null,
-    points: null,
-    roundScore: null,
-    isLoading: false,
-    isSubmitting: false
-  }))
-  const startTileView = () => setState(prev => ({ ...prev, phase: 'tile-view' }))
-  const startCountdown = () => setState(prev => ({ ...prev, phase: 'countdown' }))
-  const showMap = () => setState(prev => ({ ...prev, phase: 'map-view' }))
-  const setGuess = (coordinates: [number, number]) => setState(prev => ({ ...prev, userGuess: coordinates }))
-  const setLocation = (coordinates: [number, number]) => setState(prev => ({ ...prev, currentLocation: coordinates }))
+  const startGame = () => {
+    setState(prev => ({ 
+      ...prev, 
+      phase: 'preparing', 
+      score: 0,
+      currentLocation: null,
+      userGuess: null,
+      distance: null,
+      points: null,
+      roundScore: null,
+      isLoading: false,
+      isSubmitting: false
+    }))
+  }
+  
+  const startTileView = useCallback(() => {
+    setState(prev => ({ ...prev, phase: 'tile-view' }))
+  }, [])
+  
+  const startCountdown = () => {
+    setState(prev => ({ ...prev, phase: 'countdown' }))
+  }
+  
+  const showMap = () => {
+    setState(prev => ({ ...prev, phase: 'map-view' }))
+  }
+  
+  const setGuess = (coordinates: [number, number]) => {
+    setState(prev => ({ ...prev, userGuess: coordinates }))
+  }
+  
+  const setLocation = (coordinates: [number, number]) => {
+    setState(prev => ({ ...prev, currentLocation: coordinates }))
+  }
   
   const showResults = (currentGuess?: [number, number]) => {
     const guess = currentGuess || state.userGuess
@@ -54,18 +71,20 @@ export function useGameState() {
     }
   }
 
-  const resetGame = () => setState({
-    phase: 'menu',
-    currentLocation: null,
-    userGuess: null,
-    score: 0,
-    round: 0,
-    distance: null,
-    points: null,
-    roundScore: null,
-    isLoading: false,
-    isSubmitting: false
-  })
+  const resetGame = () => {
+    setState({
+      phase: 'menu',
+      currentLocation: null,
+      userGuess: null,
+      score: 0,
+      round: 0,
+      distance: null,
+      points: null,
+      roundScore: null,
+      isLoading: false,
+      isSubmitting: false
+    })
+  }
   
   return { 
     state, 

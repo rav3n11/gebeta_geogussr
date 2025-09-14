@@ -21,6 +21,7 @@ const TileViewComponent = forwardRef<GebetaMapRef, TileViewProps>(({
   onMapLoad,
   showOverlay = false
 }, ref) => {
+  
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-50">
       {!showOverlay && (
@@ -57,7 +58,9 @@ const TileViewComponent = forwardRef<GebetaMapRef, TileViewProps>(({
         center={currentLocation || [38.7685, 9.0161]}
         zoom={15}
         style={{ width: '100%', height: '100%' }}
-        onMapLoaded={onMapLoad}
+               onMapLoaded={() => {
+                 onMapLoad()
+               }}
         blockInteractions={true}
       />
       {/* Center marker to show exact location to guess */}

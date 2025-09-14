@@ -5,6 +5,9 @@ const router = express.Router()
 
 // GET /api/leaderboard - Get global leaderboard
 router.get('/', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET /api/leaderboard - Leaderboard request`)
+  console.log(`Query params:`, { city: req.query.city, limit: req.query.limit, gameMode: req.query.gameMode, userId: req.query.userId })
+  
   try {
     const { city, limit = '100', gameMode, userId } = req.query
 
@@ -41,6 +44,8 @@ router.get('/', async (req, res) => {
         .findOne(userQuery, { sort: { score: -1 } })
     }
 
+    console.log(`[${new Date().toISOString()}] GET /api/leaderboard - Returning ${leaderboardWithRanks.length} entries`)
+    
     res.status(200).json({
       leaderboard: leaderboardWithRanks,
       userBestScore,
@@ -62,10 +67,14 @@ router.get('/', async (req, res) => {
 
 // GET /api/leaderboard/city - Get city-specific leaderboard
 router.get('/city', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET /api/leaderboard/city - City leaderboard request`)
+  console.log(`Query params:`, { city: req.query.city, limit: req.query.limit, userId: req.query.userId })
+  
   try {
     const { city, limit = '50', userId } = req.query
 
     if (!city) {
+      console.log(`[${new Date().toISOString()}] GET /api/leaderboard/city - Missing city parameter`)
       return res.status(400).json({ error: 'City parameter is required' })
     }
 
@@ -95,6 +104,8 @@ router.get('/city', async (req, res) => {
         )
     }
 
+    console.log(`[${new Date().toISOString()}] GET /api/leaderboard/city - Returning ${leaderboardWithRanks.length} entries for city: ${city}`)
+    
     res.status(200).json({
       city,
       leaderboard: leaderboardWithRanks,

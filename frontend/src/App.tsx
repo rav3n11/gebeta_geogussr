@@ -23,6 +23,8 @@ function AppContent() {
   const isLoadingRef = useRef(false)
   const timeLeftRef = useRef(0)
   const preparingTransitionRef = useRef(false)
+  const preparingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const currentLocationRef = useRef<[number, number] | null>(null)
   const [currentMarker, setCurrentMarker] = useState<[number, number] | null>(null)
   const [hasStarted, setHasStarted] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
@@ -79,15 +81,20 @@ function AppContent() {
           const city = currentPlayingCity || 'Random'
           const gameMode = currentPlayingCity ? 'city' : 'random'
           
-          await apiClient.submitScore({
-            score: state.score,
-            city,
-            gameMode,
-            distance: state.distance || 0,
-            roundScore: state.roundScore || 0
-          }, initData)
-          
-          console.log('Score submitted successfully!')
+          // Only submit if we have valid initData (production mode)
+          if (initData && initData.trim() !== '') {
+            await apiClient.submitScore({
+              score: state.score,
+              city,
+              gameMode,
+              distance: state.distance || 0,
+              roundScore: state.roundScore || 0
+            }, initData)
+            
+            console.log('Score submitted successfully!')
+          } else {
+            console.log('Skipping score submission in development mode (no initData)')
+          }
         } catch (error) {
           console.error('Failed to submit score:', error)
           // Don't show error to user, just log it
@@ -133,43 +140,40 @@ function AppContent() {
   // Set a target location when preparing phase starts
   useEffect(() => {
     if (state.phase === 'preparing' && !hasStarted) {
-      console.log('Preparing phase: setting location')
       setHasStarted(true)
       const randomLocation = getRandomCoordinates(settings.selectedCities)
-      console.log('Random location:', randomLocation)
       setLocation(randomLocation)
     }
-  }, [state.phase, hasStarted, setLocation])
+  }, [state.phase, hasStarted, setLocation, settings.selectedCities])
+
+  // Update currentLocationRef when state.currentLocation changes
+  useEffect(() => {
+    currentLocationRef.current = state.currentLocation
+  }, [state.currentLocation])
 
   // Transition from preparing to tile-view after delay
   useEffect(() => {
-    if (state.phase === 'preparing' && hasStarted && state.currentLocation && !preparingTransitionRef.current) {
-      console.log('Starting preparing transition timer')
+    if (state.phase === 'preparing' && hasStarted && currentLocationRef.current && !preparingTransitionRef.current) {
       preparingTransitionRef.current = true
       
       const timer = setTimeout(() => {
-        console.log('Transitioning to tile-view')
+        preparingTimerRef.current = null // Clear the ref since timer fired
         startTileView()
         setIsLoading(true)
         isLoadingRef.current = true
       }, 1500) // 1.5 second delay to show preparing phase
       
-      return () => {
-        console.log('Cleaning up preparing timer')
-        clearTimeout(timer)
-      }
+      // Store timer reference to clean up later
+      preparingTimerRef.current = timer
+      
+      // Don't return cleanup function - let timer run to completion
+      // The timer will clean itself up when it fires
     }
-  }, [state.phase, hasStarted, state.currentLocation, startTileView])
+  }, [state.phase, hasStarted, startTileView]) // No state.currentLocation in dependencies
 
   // Handle tile view timer - start countdown when tile view begins
   useEffect(() => {
-    console.log('Tile-view useEffect triggered:', { 
-      phase: state.phase, 
-      hasStarted, 
-      isLoadingRef: isLoadingRef.current 
-    })
     if (state.phase === 'tile-view' && hasStarted && isLoadingRef.current) {
-      console.log('Tile-view phase: starting countdown')
       setIsLoading(false)
       isLoadingRef.current = false
       preparingTransitionRef.current = false // Reset transition flag for next game
@@ -198,7 +202,7 @@ function AppContent() {
         }
       }, 1000)
     }
-  }, [state.phase, hasStarted, settings.tileViewDuration])
+  }, [state.phase, hasStarted, settings.tileViewDuration, showMap])
 
   // Cleanup timer on unmount or phase change
   useEffect(() => {
@@ -394,10 +398,14 @@ function AppContent() {
     isLoadingRef.current = false
     preparingTransitionRef.current = false // Reset transition flag
     
-    // Clear any running timer
+    // Clear any running timers
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
+    }
+    if (preparingTimerRef.current) {
+      clearTimeout(preparingTimerRef.current)
+      preparingTimerRef.current = null
     }
     
     // Reset game state first

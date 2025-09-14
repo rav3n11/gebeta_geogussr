@@ -32,6 +32,14 @@ function validateTelegramData(initData, botToken) {
 
 // POST /api/scores - Submit a score
 router.post('/', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] POST /api/scores - Score submission request`)
+  console.log(`Request body:`, { 
+    score: req.body.score, 
+    city: req.body.city, 
+    gameMode: req.body.gameMode,
+    hasInitData: !!req.body.initData
+  })
+  
   try {
     const { 
       score, 
@@ -44,6 +52,7 @@ router.post('/', async (req, res) => {
 
     // Validate required fields
     if (!score || !city || !gameMode || !initData) {
+      console.log(`[${new Date().toISOString()}] POST /api/scores - Missing required fields`)
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
@@ -54,6 +63,7 @@ router.post('/', async (req, res) => {
     }
 
     if (!validateTelegramData(initData, botToken)) {
+      console.log(`[${new Date().toISOString()}] POST /api/scores - Invalid Telegram data`)
       return res.status(401).json({ error: 'Invalid Telegram data' })
     }
 
@@ -88,6 +98,7 @@ router.post('/', async (req, res) => {
     const scoresCollection = database.collection('scores')
     
     const result = await scoresCollection.insertOne(scoreDoc)
+    console.log(`[${new Date().toISOString()}] POST /api/scores - Score saved successfully for user ${user.id} (${user.first_name})`)
     
     // Get updated leaderboards
     const globalLeaderboard = await scoresCollection
