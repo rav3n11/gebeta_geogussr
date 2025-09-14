@@ -1,12 +1,14 @@
-import { memo, forwardRef } from 'react'
+import { memo, forwardRef, useState } from 'react'
 import GebetaMap from '@gebeta/tiles'
 import type { GebetaMapRef } from '@gebeta/tiles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, RotateCcw } from 'lucide-react'
+import { Trophy, RotateCcw, Share2, Download } from 'lucide-react'
 import { getScoreTier } from '../utils/distance'
 import { gebetaMapsApiKey } from '../config/env'
+import { shareImage, downloadShareImage } from '../utils/shareImage'
+import { useTelegram } from '../contexts/TelegramContext'
 
 interface ResultsProps {
   currentLocation: [number, number] | null
@@ -17,6 +19,7 @@ interface ResultsProps {
   bestScore: number
   onPlayAgain: () => void
   onMainMenu: () => void
+  submitError?: string | null
 }
 
 // Calculate center point and zoom to fit both markers
@@ -43,11 +46,71 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
   score,
   bestScore,
   onPlayAgain,
-  onMainMenu
+  onMainMenu,
+  submitError
 }, ref) => {
+  const [isSharing, setIsSharing] = useState(false)
+  const { user, hapticFeedback } = useTelegram()
+  
   const bounds = currentLocation && userGuess 
     ? calculateBounds(currentLocation, userGuess)
     : { center: [38.7685, 9.0161] as [number, number], zoom: 6 }
+
+  const handleShare = async () => {
+    if (!user) return
+    
+    try {
+      setIsSharing(true)
+      hapticFeedback.impactOccurred('medium')
+      
+      const tier = distance != null ? getScoreTier(distance) : { tier: 'Unknown', color: '#64748b', description: 'No distance calculated' }
+      
+      await shareImage({
+        userName: user.first_name,
+        score,
+        distance,
+        roundScore,
+        tier,
+        isNewBest: score > bestScore
+      })
+      
+      hapticFeedback.notificationOccurred('success')
+    } catch (error) {
+      console.error('Error sharing:', error)
+      hapticFeedback.notificationOccurred('error')
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!user) return
+    
+    try {
+      setIsSharing(true)
+      hapticFeedback.impactOccurred('medium')
+      
+      const tier = distance != null ? getScoreTier(distance) : { tier: 'Unknown', color: '#64748b', description: 'No distance calculated' }
+      
+      const { generateShareImage } = await import('../utils/shareImage')
+      const dataUrl = await generateShareImage({
+        userName: user.first_name,
+        score,
+        distance,
+        roundScore,
+        tier,
+        isNewBest: score > bestScore
+      })
+      
+      downloadShareImage(dataUrl, `gebeta-score-${user.first_name}-${score}.png`)
+      hapticFeedback.notificationOccurred('success')
+    } catch (error) {
+      console.error('Error downloading:', error)
+      hapticFeedback.notificationOccurred('error')
+    } finally {
+      setIsSharing(false)
+    }
+  }
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-50">
@@ -118,6 +181,31 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
               <RotateCcw className="w-4 h-4 mr-2" />
               Play Again
             </Button>
+            
+            {/* Share buttons */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleShare}
+                disabled={isSharing || !user}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                {isSharing ? 'Sharing...' : 'Share'}
+              </Button>
+              <Button 
+                onClick={handleDownload}
+                disabled={isSharing || !user}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {isSharing ? 'Generating...' : 'Download'}
+              </Button>
+            </div>
+            
             <Button 
               onClick={onMainMenu} 
               variant="outline"
@@ -127,6 +215,13 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
               Main Menu
             </Button>
           </div>
+          
+          {/* Error message */}
+          {submitError && (
+            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-xs text-red-600 text-center">{submitError}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
       <GebetaMap

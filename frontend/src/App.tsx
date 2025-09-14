@@ -46,6 +46,7 @@ function AppContent() {
     return saved ? JSON.parse(saved) : {}
   })
   const [currentPlayingCity, setCurrentPlayingCity] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -77,6 +78,7 @@ function AppContent() {
     if (state.phase === 'results' && state.currentLocation && state.userGuess && webApp && user) {
       const submitScore = async () => {
         try {
+          setSubmitError(null) // Clear any previous errors
           const initData = webApp.initData
           const city = currentPlayingCity || 'Random'
           const gameMode = currentPlayingCity ? 'city' : 'random'
@@ -100,7 +102,7 @@ function AppContent() {
           console.log('Score submitted successfully!')
         } catch (error) {
           console.error('Failed to submit score:', error)
-          // Don't show error to user, just log it
+          setSubmitError('Failed to save score. Your progress is still saved locally.')
         }
       }
       
@@ -398,6 +400,7 @@ function AppContent() {
     setMapLoaded(false)
     setIsSubmitting(false)
     setIsLoading(false)
+    setSubmitError(null) // Clear any submit errors
     isLoadingRef.current = false
     preparingTransitionRef.current = false // Reset transition flag
     
@@ -437,6 +440,7 @@ function AppContent() {
     setMapLoaded(false)
     setIsSubmitting(false)
     setIsLoading(false)
+    setSubmitError(null) // Clear any submit errors
     isLoadingRef.current = false
     preparingTransitionRef.current = false // Reset transition flag
     
@@ -503,6 +507,7 @@ function AppContent() {
           bestScore={bestScore}
           onPlayAgain={handlePlayAgain}
           onMainMenu={handleMainMenu}
+          submitError={submitError}
         />
       )}
       {showSettings && (

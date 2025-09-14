@@ -5,14 +5,13 @@ import { Badge } from './ui/badge'
 import { Spinner } from './ui/spinner'
 import { apiClient } from '../utils/api'
 import type { LeaderboardEntry, LeaderboardResponse } from '../utils/api'
-import { useTelegram } from '../contexts/TelegramContext'
-import { Trophy, Medal, Award, Users, MapPin, Clock, Target } from 'lucide-react'
+import { Trophy, Medal, Award, Users, MapPin, Clock } from 'lucide-react'
 
 interface LeaderboardProps {
   onClose: () => void
 }
 
-type LeaderboardType = 'global' | 'city' | 'user'
+type LeaderboardType = 'global' | 'city'
 type GameMode = 'random' | 'city' | 'all'
 
 export default function Leaderboard({ }: LeaderboardProps) {
@@ -23,7 +22,6 @@ export default function Leaderboard({ }: LeaderboardProps) {
   const [userBestScore, setUserBestScore] = useState<LeaderboardEntry | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useTelegram()
 
   const cities = [
     'Addis Ababa', 'Dire Dawa', 'Bahir Dar', 'Gondar', 'Mekelle',
@@ -47,14 +45,6 @@ export default function Leaderboard({ }: LeaderboardProps) {
           break
         case 'city':
           response = await apiClient.getCityLeaderboard(selectedCity, 50)
-          break
-        case 'user':
-          if (user?.id) {
-            response = await apiClient.getUserLeaderboard(user.id, 100)
-          } else {
-            setError('User not authenticated')
-            return
-          }
           break
         default:
           return
@@ -117,18 +107,17 @@ export default function Leaderboard({ }: LeaderboardProps) {
           <div className="flex space-x-1 border-b border-gray-200">
             {[
               { key: 'global', label: 'Global', icon: Users },
-              { key: 'city', label: 'City', icon: MapPin },
-              { key: 'user', label: 'My Scores', icon: Target }
+              { key: 'city', label: 'City', icon: MapPin }
             ].map(({ key, label, icon: Icon }) => (
               <Button
                 key={key}
-                variant={activeTab === key ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setActiveTab(key as LeaderboardType)}
                 className={`flex items-center gap-1 text-xs px-3 py-2 ${
                   activeTab === key 
-                    ? 'bg-black text-white border-b-2 border-black' 
-                    : 'text-gray-600 hover:text-black'
+                    ? 'bg-black text-white' 
+                    : 'text-gray-600'
                 }`}
               >
                 <Icon className="w-3 h-3" />
@@ -144,13 +133,13 @@ export default function Leaderboard({ }: LeaderboardProps) {
                 {['all', 'random', 'city'].map((mode) => (
                   <Button
                     key={mode}
-                    variant={gameMode === mode ? 'default' : 'outline'}
+                    variant="outline"
                     size="sm"
                     onClick={() => setGameMode(mode as GameMode)}
                     className={`text-xs px-2 py-1 ${
                       gameMode === mode 
-                        ? 'bg-black text-white' 
-                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                        ? 'bg-black text-white border-black' 
+                        : 'border-gray-300 text-gray-600'
                     }`}
                   >
                     {mode === 'all' ? 'All' : mode === 'random' ? 'Random' : 'City'}
