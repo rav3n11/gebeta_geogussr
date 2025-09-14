@@ -349,7 +349,7 @@ const shareInTelegram = async (dataUrl: string, data: ShareImageData) => {
         `Can you beat my score? Play now!`
       
       // Create a shareable URL with the text
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebetaPlayGeoBot')}&text=${encodeURIComponent(shareText)}`
       
       // Use the correct Telegram method
       webApp.openTelegramLink(shareUrl)
@@ -357,7 +357,7 @@ const shareInTelegram = async (dataUrl: string, data: ShareImageData) => {
     } else {
       // Fallback: open share URL in regular browser
       const shareText = `🎯 My Gebeta Score! Score: ${data.score} points. Can you beat my score?`
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebetaPlayGeoBot')}&text=${encodeURIComponent(shareText)}`
       window.open(shareUrl, '_blank')
     }
     

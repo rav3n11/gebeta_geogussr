@@ -98,18 +98,30 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
       // Try multiple detection methods
       let tg = null
       
-      // Method 1: Direct check
+      // Method 1: Direct check with better validation
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        tg = window.Telegram.WebApp
-        console.log('Telegram WebApp detected via direct check!')
+        const webApp = window.Telegram.WebApp
+        
+        // Check if we're actually in Telegram (not just script loaded)
+        if (webApp.initData && webApp.initDataUnsafe && webApp.platform) {
+          tg = webApp
+          console.log('Telegram WebApp detected via direct check!')
+        } else {
+          console.log('Telegram WebApp script loaded but not in Telegram environment')
+        }
       }
       
       // Method 2: Try calling expand() method (Telegram-specific)
-      if (!tg && typeof window !== 'undefined' && window.Telegram) {
+      if (!tg && typeof window !== 'undefined' && window.Telegram?.WebApp) {
         try {
-          window.Telegram.WebApp.expand()
-          tg = window.Telegram.WebApp
-          console.log('Telegram WebApp detected via expand() method!')
+          const webApp = window.Telegram.WebApp
+          webApp.expand()
+          
+          // Only set if we have proper Telegram data
+          if (webApp.initData && webApp.initDataUnsafe && webApp.platform) {
+            tg = webApp
+            console.log('Telegram WebApp detected via expand() method!')
+          }
         } catch (error) {
           console.log('expand() method failed:', error)
         }
@@ -118,8 +130,10 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
       // Method 3: Check for Telegram-specific properties
       if (!tg && typeof window !== 'undefined' && window.Telegram) {
         const telegramObj = window.Telegram as any
-        if (telegramObj.WebApp || telegramObj.webApp) {
-          tg = telegramObj.WebApp || telegramObj.webApp
+        const webApp = telegramObj.WebApp || telegramObj.webApp
+        
+        if (webApp && webApp.initData && webApp.initDataUnsafe && webApp.platform) {
+          tg = webApp
           console.log('Telegram WebApp detected via property check!')
         }
       }
