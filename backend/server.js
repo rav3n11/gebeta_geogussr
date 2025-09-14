@@ -11,7 +11,8 @@ app.use(cors({
     'http://localhost:5173', // Vite dev server
     'http://localhost:3000', // Local frontend
     'https://gebeta-geogussr.onrender.com', // Production frontend
-    'https://gebeta-geogussr-backend.onrender.com' // Production backend
+    'https://gebeta-geogussr-backend.onrender.com', // Production backend
+    'https://geo.play.gebeta.app' // main domain
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
