@@ -11,14 +11,6 @@ interface ShareImageData {
   isNewBest: boolean
 }
 
-// Telegram WebApp API types for sharing
-interface TelegramWebAppSharing {
-  openTelegramLink: (url: string) => void
-  openLink: (url: string, options?: { try_instant_view?: boolean }) => void
-  sendData: (data: string) => void
-  showAlert: (message: string) => void
-  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void
-}
 
 export const generateShareImage = async (data: ShareImageData): Promise<string> => {
   const canvas = document.createElement('canvas')
@@ -228,11 +220,10 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
 
 export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-score.png') => {
   // Check if we're in Telegram WebApp
-  const isTelegram = (window as any).Telegram?.WebApp
+  const webApp = (window as any).Telegram?.WebApp
   
-  if (isTelegram) {
-    // Use Telegram's openLink method for better compatibility
-    const webApp = isTelegram as TelegramWebAppSharing
+  if (webApp) {
+    // Use Telegram's openLink method with try_instant_view option
     webApp.openLink(dataUrl, { try_instant_view: true })
     return
   }
@@ -286,25 +277,29 @@ export const shareImage = async (data: ShareImageData) => {
 
 const shareInTelegram = async (dataUrl: string, data: ShareImageData) => {
   try {
-    const webApp = (window as any).Telegram?.WebApp as TelegramWebAppSharing
+    const webApp = (window as any).Telegram?.WebApp
     
-    if (!webApp) {
-      throw new Error('Telegram WebApp not available')
+    if (webApp) {
+      // Create share text for Telegram
+      const shareText = `🎯 *My Gebeta Score!*\n\n` +
+        `Score: ${data.score} points\n` +
+        `Distance: ${data.distance ? `${Math.round(data.distance)}km` : 'Unknown'}\n` +
+        `Tier: ${data.tier.tier}\n` +
+        `${data.isNewBest ? '🏆 NEW BEST!' : ''}\n\n` +
+        `Can you beat my score? Play now!`
+      
+      // Create a shareable URL with the text
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
+      
+      // Use the correct Telegram method from the documentation
+      webApp.openTelegramLink(shareUrl)
+      
+    } else {
+      // Fallback: open share URL in regular browser
+      const shareText = `🎯 My Gebeta Score! Score: ${data.score} points. Can you beat my score?`
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
+      window.open(shareUrl, '_blank')
     }
-    
-    // Create share text for Telegram
-    const shareText = `🎯 *My Gebeta Score!*\n\n` +
-      `Score: ${data.score} points\n` +
-      `Distance: ${data.distance ? `${Math.round(data.distance)}km` : 'Unknown'}\n` +
-      `Tier: ${data.tier.tier}\n` +
-      `${data.isNewBest ? '🏆 NEW BEST!' : ''}\n\n` +
-      `Can you beat my score? Play now!`
-    
-    // Create a shareable URL with the text
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
-    
-    // Use Telegram's native sharing
-    webApp.openTelegramLink(shareUrl)
     
   } catch (error) {
     console.error('Error sharing in Telegram:', error)
