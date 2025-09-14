@@ -6,6 +6,7 @@ import { Spinner } from './ui/spinner'
 import { apiClient } from '../utils/api'
 import type { LeaderboardEntry } from '../utils/api'
 import { Trophy, Medal, Award, MapPin, ChevronRight, RefreshCw } from 'lucide-react'
+import { getUserAvatarUrl } from '../utils/dicebearAvatar'
 
 interface LeaderboardPreviewProps {
   onViewFull: () => void
@@ -119,17 +120,11 @@ export default function LeaderboardPreview({ onViewFull }: LeaderboardPreviewPro
                     {getRankIcon(entry.rank || index + 1)}
                   </div>
                   <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
-                    {entry.photo_url ? (
-                      <img 
-                        src={entry.photo_url} 
-                        alt={`${entry.firstName} avatar`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                        {entry.firstName?.charAt(0) || '?'}
-                      </div>
-                    )}
+                    <img 
+                      src={entry.photo_url || getUserAvatarUrl(entry.firstName, entry.lastName)} 
+                      alt={`${entry.firstName} avatar`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-medium truncate">

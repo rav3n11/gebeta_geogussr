@@ -158,7 +158,7 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
               <User className="w-4 h-4 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">
                 Welcome, {user.first_name}
-                {user.username && ` (@${user.username})`}
+                {user.username && user.id !== 999999999 && ` (@${user.username})`}
               </span>
             </div>
           )}

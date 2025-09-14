@@ -161,15 +161,21 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
           console.log('Setting real user data:', userData)
           setUser(userData)
         } else {
-          console.log('No user data found in Telegram WebApp - using fallback')
+          console.log('No user data found in Telegram WebApp - using random name')
           // Fallback user data when Telegram WebApp is detected but no user data
+          let userName = getStoredUserName()
+          if (!userName) {
+            userName = generateRandomName()
+            storeUserName(userName)
+          }
+          
           const fallbackUser: TelegramUser = {
             id: 999999999,
-            first_name: 'Telegram',
-            last_name: 'User',
-            username: 'telegramuser',
+            first_name: userName,
+            last_name: '',
             language_code: 'en',
-            is_premium: false
+            is_premium: false,
+            photo_url: generateAvatarUrl(userName)
           }
           setUser(fallbackUser)
         }
@@ -202,15 +208,21 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
         // Only use fallback user if we're explicitly simulating production
         // In real production, we should still try to get Telegram data
         if (isSimulateProduction) {
-          // Simulate production mode - use fallback user like in Telegram
-          console.log('Using simulated production fallback user')
+          // Simulate production mode - use random name like in development
+          console.log('Using simulated production with random name')
+          let userName = getStoredUserName()
+          if (!userName) {
+            userName = generateRandomName()
+            storeUserName(userName)
+          }
+          
           const fallbackUser: TelegramUser = {
             id: 999999999,
-            first_name: 'Telegram',
-            last_name: 'User',
-            username: 'telegramuser',
+            first_name: userName,
+            last_name: '',
             language_code: 'en',
-            is_premium: false
+            is_premium: false,
+            photo_url: generateAvatarUrl(userName)
           }
           setUser(fallbackUser)
         } else {
@@ -226,7 +238,6 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
             id: Math.floor(Math.random() * 1000000) + 100000, // Random ID
             first_name: userName,
             last_name: '',
-            username: userName.toLowerCase(),
             language_code: 'en',
             is_premium: false,
             photo_url: generateAvatarUrl(userName)

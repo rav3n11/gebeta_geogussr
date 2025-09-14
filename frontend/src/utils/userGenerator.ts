@@ -1,5 +1,4 @@
-import { createAvatar } from '@dicebear/core'
-import { adventurer } from '@dicebear/collection'
+import { generateDiceBearAvatar } from './dicebearAvatar'
 
 // Simple random name generator
 const adjectives = ['Happy', 'Clever', 'Swift', 'Bright', 'Bold', 'Wise', 'Kind', 'Brave', 'Calm', 'Wild']
@@ -13,12 +12,7 @@ export function generateRandomName(): string {
 }
 
 export function generateAvatarUrl(name: string): string {
-  const avatar = createAvatar(adventurer, {
-    seed: name,
-    size: 40,
-    backgroundColor: ['b6e3f4', 'c0aede', 'd1d4f9', 'ffd5dc', 'ffdfbf']
-  })
-  return avatar.toDataUri()
+  return generateDiceBearAvatar(name, 40)
 }
 
 export function getStoredUserName(): string | null {
