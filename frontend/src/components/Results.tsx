@@ -50,7 +50,7 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
   submitError
 }, ref) => {
   const [isSharing, setIsSharing] = useState(false)
-  const { user, hapticFeedback } = useTelegram()
+  const { user, hapticFeedback, webApp } = useTelegram()
   
   const bounds = currentLocation && userGuess 
     ? calculateBounds(currentLocation, userGuess)
@@ -194,16 +194,19 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
                 <Share2 className="w-4 h-4 mr-2" />
                 {isSharing ? 'Sharing...' : 'Share'}
               </Button>
-              <Button 
-                onClick={handleDownload}
-                disabled={isSharing || !user}
-                variant="outline"
-                className="flex-1"
-                size="lg"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {isSharing ? 'Generating...' : 'Download'}
-              </Button>
+              {/* Only show download button in regular browsers, not in Telegram */}
+              {!webApp && (
+                <Button 
+                  onClick={handleDownload}
+                  disabled={isSharing || !user}
+                  variant="outline"
+                  className="flex-1"
+                  size="lg"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isSharing ? 'Generating...' : 'Download'}
+                </Button>
+              )}
             </div>
             
             <Button 
