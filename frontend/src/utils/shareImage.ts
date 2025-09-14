@@ -13,9 +13,11 @@ interface ShareImageData {
 
 // Telegram WebApp API types for sharing
 interface TelegramWebAppSharing {
-  shareToStory?: (params: { url: string; text: string }) => Promise<void>
+  openTelegramLink: (url: string) => void
+  openLink: (url: string, options?: { try_instant_view?: boolean }) => void
   sendData: (data: string) => void
   showAlert: (message: string) => void
+  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void
 }
 
 export const generateShareImage = async (data: ShareImageData): Promise<string> => {
@@ -229,12 +231,9 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
   const isTelegram = (window as any).Telegram?.WebApp
   
   if (isTelegram) {
-    // In Telegram, we can't directly download files, so we'll open in a new tab
-    // This allows users to long-press and save the image
-    const newWindow = window.open(dataUrl, '_blank')
-    if (newWindow) {
-      newWindow.document.title = fileName
-    }
+    // Use Telegram's openLink method for better compatibility
+    const webApp = isTelegram as TelegramWebAppSharing
+    webApp.openLink(dataUrl, { try_instant_view: true })
     return
   }
   
@@ -287,64 +286,29 @@ export const shareImage = async (data: ShareImageData) => {
 
 const shareInTelegram = async (dataUrl: string, data: ShareImageData) => {
   try {
-    // Convert data URL to blob
-    const response = await fetch(dataUrl)
-    const blob = await response.blob()
-    
-    // Convert blob to base64 for Telegram
-    const base64 = await new Promise<string>((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        resolve(result.split(',')[1]) // Remove data:image/png;base64, prefix
-      }
-      reader.readAsDataURL(blob)
-    })
-    
     const webApp = (window as any).Telegram?.WebApp as TelegramWebAppSharing
     
     if (!webApp) {
       throw new Error('Telegram WebApp not available')
     }
     
-    // Try to share to story first (if available)
-    if (webApp.shareToStory) {
-      try {
-        await webApp.shareToStory({
-          url: `data:image/png;base64,${base64}`,
-          text: `I scored ${data.score} points in Guess the Place! Can you beat my score? 🎯`
-        })
-        return
-      } catch (storyError) {
-        console.log('Story sharing not available, trying other methods')
-      }
-    }
-    
-    // Fallback: Send data to bot for sharing
+    // Create share text for Telegram
     const shareText = `🎯 *My Gebeta Score!*\n\n` +
       `Score: ${data.score} points\n` +
       `Distance: ${data.distance ? `${Math.round(data.distance)}km` : 'Unknown'}\n` +
       `Tier: ${data.tier.tier}\n` +
       `${data.isNewBest ? '🏆 NEW BEST!' : ''}\n\n` +
-      `Can you beat my score? Play now: https://t.me/gebeta_bot`
+      `Can you beat my score? Play now!`
     
-    // Send data to bot
-    webApp.sendData(JSON.stringify({
-      type: 'share_score',
-      score: data.score,
-      distance: data.distance,
-      tier: data.tier.tier,
-      isNewBest: data.isNewBest,
-      image: base64,
-      text: shareText
-    }))
+    // Create a shareable URL with the text
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/gebeta_bot')}&text=${encodeURIComponent(shareText)}`
     
-    // Show a popup to inform user
-    webApp.showAlert('Score shared! Check your chat with the bot to see your score image.')
+    // Use Telegram's native sharing
+    webApp.openTelegramLink(shareUrl)
     
   } catch (error) {
     console.error('Error sharing in Telegram:', error)
-    // Fallback to download
-    downloadShareImage(dataUrl)
+    // Fallback to showing the image in a new tab
+    window.open(dataUrl, '_blank')
   }
 }
