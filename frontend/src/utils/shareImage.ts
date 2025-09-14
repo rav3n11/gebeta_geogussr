@@ -223,39 +223,36 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
   const webApp = (window as any).Telegram?.WebApp
   
   if (webApp) {
-    // In Telegram, use a simpler approach
-    // Create a temporary anchor element and trigger download
-    try {
-      // Convert data URL to blob
-      fetch(dataUrl).then(response => response.blob()).then(blob => {
-        // Create a temporary URL for the blob
-        const blobUrl = URL.createObjectURL(blob)
-        
-        // Create a temporary anchor element
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = fileName
-        link.style.display = 'none'
-        
-        // Add to DOM, click, and remove
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        
-        // Clean up the blob URL
-        setTimeout(() => {
-          URL.revokeObjectURL(blobUrl)
-        }, 1000)
-        
-        // Show success message
-        webApp.showAlert('Download started! Check your downloads folder.')
-        
-      }).catch(() => {
+    // In Telegram, use the official downloadFile method
+    if (webApp.downloadFile) {
+      try {
+        // Convert data URL to blob and create a temporary URL
+        fetch(dataUrl).then(response => response.blob()).then(blob => {
+          const blobUrl = URL.createObjectURL(blob)
+          
+          // Use the official downloadFile method
+          webApp.downloadFile({
+            url: blobUrl,
+            filename: fileName
+          }, (success: boolean) => {
+            if (success) {
+              webApp.showAlert('Download started!')
+            } else {
+              webApp.showAlert('Download cancelled or failed.')
+            }
+            // Clean up the blob URL
+            URL.revokeObjectURL(blobUrl)
+          })
+        }).catch(() => {
+          // Fallback to bot integration
+          downloadViaBot(webApp, dataUrl, fileName)
+        })
+      } catch (error) {
         // Fallback to bot integration
         downloadViaBot(webApp, dataUrl, fileName)
-      })
-    } catch (error) {
-      // Fallback to bot integration
+      }
+    } else {
+      // Fallback to bot integration if downloadFile not available
       downloadViaBot(webApp, dataUrl, fileName)
     }
     return
