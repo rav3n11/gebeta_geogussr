@@ -219,46 +219,10 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
 }
 
 export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-score.png') => {
-  // Check if we're in Telegram WebApp
-  const webApp = (window as any).Telegram?.WebApp
+  // This function is only called for non-Telegram users
+  // (Download button is hidden in Telegram via Results component)
   
-  if (webApp) {
-    // In Telegram, use the official downloadFile method
-    if (webApp.downloadFile) {
-      try {
-        // Convert data URL to blob and create a temporary URL
-        fetch(dataUrl).then(response => response.blob()).then(blob => {
-          const blobUrl = URL.createObjectURL(blob)
-          
-          // Use the official downloadFile method
-          webApp.downloadFile({
-            url: blobUrl,
-            filename: fileName
-          }, (success: boolean) => {
-            if (success) {
-              webApp.showAlert('Download started!')
-            } else {
-              webApp.showAlert('Download cancelled or failed.')
-            }
-            // Clean up the blob URL
-            URL.revokeObjectURL(blobUrl)
-          })
-        }).catch(() => {
-          // Fallback to bot integration
-          downloadViaBot(webApp, dataUrl, fileName)
-        })
-      } catch (error) {
-        // Fallback to bot integration
-        downloadViaBot(webApp, dataUrl, fileName)
-      }
-    } else {
-      // Fallback to bot integration if downloadFile not available
-      downloadViaBot(webApp, dataUrl, fileName)
-    }
-    return
-  }
-  
-  // Regular browser download - simple and reliable approach
+  // Simple and reliable download approach
   const link = document.createElement('a')
   link.download = fileName
   link.href = dataUrl
@@ -269,29 +233,6 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
   document.body.removeChild(link)
 }
 
-const downloadViaBot = (webApp: any, dataUrl: string, fileName: string) => {
-  try {
-    // Convert data URL to base64
-    const base64 = dataUrl.split(',')[1]
-    
-    // Send image data to bot for download
-    webApp.sendData(JSON.stringify({
-      type: 'download_score',
-      action: 'download_image',
-      image: base64,
-      filename: fileName,
-      timestamp: Date.now()
-    }))
-    
-    // Show confirmation
-    webApp.showAlert('Image sent to bot! Check your chat to download the image.')
-    
-  } catch (error) {
-    console.error('Error downloading via bot:', error)
-    // Final fallback: show alert with instructions
-    webApp.showAlert('Image ready! Long-press the image above to save it to your device.')
-  }
-}
 
 export const shareImage = async (data: ShareImageData) => {
   try {
