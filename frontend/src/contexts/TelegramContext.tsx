@@ -166,9 +166,11 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
         console.log('Production mode:', isProduction)
         console.log('Simulate production:', isSimulateProduction)
         
-        if (isProduction || isSimulateProduction) {
-          // Production mode - use fallback user like in Telegram
-          console.log('Using production fallback user')
+        // Only use fallback user if we're explicitly simulating production
+        // In real production, we should still try to get Telegram data
+        if (isSimulateProduction) {
+          // Simulate production mode - use fallback user like in Telegram
+          console.log('Using simulated production fallback user')
           const fallbackUser: TelegramUser = {
             id: 999999999,
             first_name: 'Telegram',
@@ -179,7 +181,7 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
           }
           setUser(fallbackUser)
         } else {
-          // Development mode - use random name with avatar
+          // Development mode or real production - use random name with avatar
           console.log('Using development mode with random name')
           let userName = getStoredUserName()
           if (!userName) {
