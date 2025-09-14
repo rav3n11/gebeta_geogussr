@@ -122,7 +122,17 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
         console.log('Setting user data:', userData)
         setUser(userData)
       } else {
-        console.log('No user data found in Telegram WebApp')
+        console.log('No user data found in Telegram WebApp - using fallback')
+        // Fallback user data when Telegram WebApp is detected but no user data
+        const fallbackUser: TelegramUser = {
+          id: 999999999,
+          first_name: 'Telegram',
+          last_name: 'User',
+          username: 'telegramuser',
+          language_code: 'en',
+          is_premium: false
+        }
+        setUser(fallbackUser)
       }
       
       // Mark as ready
@@ -146,9 +156,9 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
       console.log('Running in development mode - using mock user data')
       const mockUser: TelegramUser = {
         id: 123456789,
-        first_name: 'Test',
+        first_name: 'Development',
         last_name: 'User',
-        username: 'testuser',
+        username: 'devuser',
         language_code: 'en',
         is_premium: false
       }

@@ -17,7 +17,7 @@ import { apiClient } from './utils/api'
 function AppContent() {
   const { webApp, user } = useTelegram()
   const mapRef = useRef<GebetaMapRef>(null)
-  const { state, startGame, startTileView, showMap, setGuess, setLocation, showResults } = useGameState()
+  const { state, startGame, startTileView, showMap, setGuess, setLocation, showResults, resetGame } = useGameState()
   const [tileViewTimeLeft, setTileViewTimeLeft] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const isLoadingRef = useRef(false)
@@ -172,6 +172,7 @@ function AppContent() {
       console.log('Tile-view phase: starting countdown')
       setIsLoading(false)
       isLoadingRef.current = false
+      preparingTransitionRef.current = false // Reset transition flag for next game
       
       // Clear any existing timer first
       if (timerRef.current) {
@@ -219,6 +220,7 @@ function AppContent() {
       setIsSubmitting(false)
       setIsLoading(false)
       isLoadingRef.current = false
+      preparingTransitionRef.current = false // Reset transition flag
       
       // Clear any running timer
       if (timerRef.current) {
@@ -290,6 +292,21 @@ function AppContent() {
     setCurrentPlayingCity(null) // Reset to random play
     setHasStarted(false) // Reset to allow new location selection
     preparingTransitionRef.current = false // Reset transition flag
+    
+    // Reset all local state
+    setTileViewTimeLeft(0)
+    setCurrentMarker(null)
+    setMapLoaded(false)
+    setIsSubmitting(false)
+    setIsLoading(false)
+    isLoadingRef.current = false
+    
+    // Clear any running timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    
     startGame()
   }, [startGame])
 
@@ -297,6 +314,21 @@ function AppContent() {
     setCurrentPlayingCity(cityName)
     setHasStarted(false) // Reset to allow new location selection
     preparingTransitionRef.current = false // Reset transition flag
+    
+    // Reset all local state
+    setTileViewTimeLeft(0)
+    setCurrentMarker(null)
+    setMapLoaded(false)
+    setIsSubmitting(false)
+    setIsLoading(false)
+    isLoadingRef.current = false
+    
+    // Clear any running timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    
     // Set the selected city in settings temporarily
     const citySettings = {
       ...settings,
@@ -352,7 +384,7 @@ function AppContent() {
   }, [currentMarker, state.phase, isSubmitting, setGuess, showResults])
 
   const handlePlayAgain = useCallback(() => {
-    // Reset game state and start a new game
+    // Reset all local state
     setHasStarted(false)
     setTileViewTimeLeft(0)
     setCurrentMarker(null)
@@ -360,12 +392,16 @@ function AppContent() {
     setIsSubmitting(false)
     setIsLoading(false)
     isLoadingRef.current = false
+    preparingTransitionRef.current = false // Reset transition flag
     
     // Clear any running timer
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
+    
+    // Reset game state first
+    resetGame()
     
     // If playing a specific city, replay the same city
     if (currentPlayingCity) {
@@ -378,8 +414,9 @@ function AppContent() {
       setCurrentPlayingCity(null)
     }
     
+    // Start new game
     startGame()
-  }, [startGame, currentPlayingCity, settings])
+  }, [resetGame, startGame, currentPlayingCity, settings])
 
   const handleMainMenu = useCallback(() => {
     // Reset all game state
@@ -390,6 +427,7 @@ function AppContent() {
     setIsSubmitting(false)
     setIsLoading(false)
     isLoadingRef.current = false
+    preparingTransitionRef.current = false // Reset transition flag
     
     // Clear any running timer
     if (timerRef.current) {
@@ -397,9 +435,9 @@ function AppContent() {
       timerRef.current = null
     }
     
-    // Reset game state to menu
-    window.location.reload()
-  }, [])
+    // Reset game state to menu using the hook
+    resetGame()
+  }, [resetGame])
 
 
 
