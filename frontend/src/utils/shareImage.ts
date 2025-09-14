@@ -258,46 +258,15 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
     return
   }
   
-  // Regular browser download - use the same blob approach for consistency
-  try {
-    fetch(dataUrl).then(response => response.blob()).then(blob => {
-      const blobUrl = URL.createObjectURL(blob)
-      
-      const link = document.createElement('a')
-      link.download = fileName
-      link.href = blobUrl
-      link.style.display = 'none'
-      
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      // Clean up the blob URL
-      setTimeout(() => {
-        URL.revokeObjectURL(blobUrl)
-      }, 1000)
-    }).catch(() => {
-      // Fallback to direct data URL download
-      const link = document.createElement('a')
-      link.download = fileName
-      link.href = dataUrl
-      link.style.display = 'none'
-      
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    })
-  } catch (error) {
-    // Final fallback to direct data URL download
-    const link = document.createElement('a')
-    link.download = fileName
-    link.href = dataUrl
-    link.style.display = 'none'
-    
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+  // Regular browser download - simple and reliable approach
+  const link = document.createElement('a')
+  link.download = fileName
+  link.href = dataUrl
+  link.style.display = 'none'
+  
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 const downloadViaBot = (webApp: any, dataUrl: string, fileName: string) => {

@@ -182,19 +182,23 @@ const ResultsComponent = forwardRef<GebetaMapRef, ResultsProps>(({
               Play Again
             </Button>
             
-            {/* Share buttons */}
+            {/* Share/Download button */}
             <div className="flex gap-2">
-              <Button 
-                onClick={handleShare}
-                disabled={isSharing || !user}
-                variant="outline"
-                className="flex-1"
-                size="lg"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                {isSharing ? 'Sharing...' : 'Share'}
-              </Button>
-              {/* Only show download button in regular browsers, not in Telegram */}
+              {/* Show share button only in Telegram */}
+              {webApp && (
+                <Button 
+                  onClick={handleShare}
+                  disabled={isSharing || !user}
+                  variant="outline"
+                  className="flex-1"
+                  size="lg"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  {isSharing ? 'Sharing...' : 'Share'}
+                </Button>
+              )}
+              
+              {/* Show download button only in regular browsers */}
               {!webApp && (
                 <Button 
                   onClick={handleDownload}
