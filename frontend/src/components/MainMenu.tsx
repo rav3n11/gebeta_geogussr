@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,15 @@ interface MainMenuProps {
 export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings, onOpenCityLeaderboard, bestScore, cityScores }: MainMenuProps) => {
   const [showCitySelection, setShowCitySelection] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [leaderboardKey, setLeaderboardKey] = useState(0)
   const { user, hapticFeedback } = useTelegram()
+
+  // Refresh leaderboard when returning to main menu
+  useEffect(() => {
+    if (!showCitySelection && !showLeaderboard) {
+      setLeaderboardKey(prev => prev + 1)
+    }
+  }, [showCitySelection, showLeaderboard])
 
   const handleCitySelect = (cityName: string) => {
     hapticFeedback.selectionChanged()
@@ -183,7 +191,7 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
           </div>
 
           {/* Leaderboard Preview */}
-          <LeaderboardPreview onViewFull={handleOpenLeaderboard} />
+          <LeaderboardPreview key={leaderboardKey} onViewFull={handleOpenLeaderboard} />
 
           <div className="flex justify-center mt-4">
             <span className="text-xs text-gray-400">Powered by Gebeta</span>

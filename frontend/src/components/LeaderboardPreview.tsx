@@ -5,7 +5,7 @@ import { Badge } from './ui/badge'
 import { Spinner } from './ui/spinner'
 import { apiClient } from '../utils/api'
 import type { LeaderboardEntry } from '../utils/api'
-import { Trophy, Medal, Award, MapPin, ChevronRight } from 'lucide-react'
+import { Trophy, Medal, Award, MapPin, ChevronRight, RefreshCw } from 'lucide-react'
 
 interface LeaderboardPreviewProps {
   onViewFull: () => void
@@ -14,28 +14,42 @@ interface LeaderboardPreviewProps {
 export default function LeaderboardPreview({ onViewFull }: LeaderboardPreviewProps) {
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadTopScores()
   }, [])
 
-  const loadTopScores = async () => {
+  const loadTopScores = async (isRefresh = false) => {
     try {
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+      setError(null)
+      
       const response = await apiClient.getGlobalLeaderboard(5, 'all')
       setTopScores(response.leaderboard)
     } catch (err) {
+      console.error('Failed to load leaderboard:', err)
       setError('Failed to load leaderboard')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
+  const handleRefresh = () => {
+    loadTopScores(true)
+  }
+
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="w-4 h-4 text-yellow-500" />
-    if (rank === 2) return <Medal className="w-4 h-4 text-gray-400" />
-    if (rank === 3) return <Award className="w-4 h-4 text-amber-600" />
-    return <span className="w-4 h-4 flex items-center justify-center text-xs font-bold text-gray-500">#{rank}</span>
+    if (rank === 1) return <Trophy className="w-3 h-3 text-black" />
+    if (rank === 2) return <Medal className="w-3 h-3 text-gray-600" />
+    if (rank === 3) return <Award className="w-3 h-3 text-gray-600" />
+    return <span className="w-3 h-3 flex items-center justify-center text-xs font-bold text-gray-500">#{rank}</span>
   }
 
   const formatScore = (score: number) => {
@@ -44,70 +58,91 @@ export default function LeaderboardPreview({ onViewFull }: LeaderboardPreviewPro
 
 
   const getScoreTier = (score: number) => {
-    if (score >= 950) return { tier: 'Perfect!', color: 'bg-green-500' }
-    if (score >= 800) return { tier: 'Excellent', color: 'bg-blue-500' }
-    if (score >= 600) return { tier: 'Great', color: 'bg-purple-500' }
-    if (score >= 400) return { tier: 'Good', color: 'bg-yellow-500' }
-    if (score >= 200) return { tier: 'Fair', color: 'bg-orange-500' }
-    return { tier: 'Miss', color: 'bg-red-500' }
+    if (score >= 950) return { tier: 'Perfect!', color: 'bg-black text-white' }
+    if (score >= 800) return { tier: 'Excellent', color: 'bg-gray-800 text-white' }
+    if (score >= 600) return { tier: 'Great', color: 'bg-gray-600 text-white' }
+    if (score >= 400) return { tier: 'Good', color: 'bg-gray-400 text-black' }
+    if (score >= 200) return { tier: 'Fair', color: 'bg-gray-300 text-black' }
+    return { tier: 'Miss', color: 'bg-gray-200 text-black' }
   }
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
+          <CardTitle className="text-sm flex items-center gap-1 font-medium">
+            <Trophy className="w-4 h-4 text-black" />
             Top Scores
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onViewFull} className="flex items-center gap-1">
-            View All
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+              className="flex items-center gap-1 text-xs text-gray-600 hover:text-black"
+            >
+              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onViewFull} className="flex items-center gap-1 text-xs text-gray-600 hover:text-black">
+              View All
+              <ChevronRight className="w-3 h-3" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-1">
         {loading ? (
-          <div className="flex items-center justify-center py-4">
-            <Spinner size="md" />
-            <span className="ml-2 text-sm text-gray-500">Loading...</span>
+          <div className="flex items-center justify-center py-3">
+            <Spinner size="sm" />
+            <span className="ml-2 text-xs text-gray-500">Loading...</span>
           </div>
         ) : error ? (
-          <div className="text-center py-4 text-red-500 text-sm">
+          <div className="text-center py-3 text-gray-500 text-xs">
             <p>{error}</p>
-            <Button variant="outline" size="sm" onClick={loadTopScores} className="mt-2">
+            <Button variant="outline" size="sm" onClick={loadTopScores} className="mt-2 text-xs">
               Retry
             </Button>
           </div>
         ) : topScores.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
-            <Trophy className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No scores yet. Be the first!</p>
+          <div className="text-center py-3 text-gray-500">
+            <Trophy className="w-6 h-6 mx-auto mb-1 text-gray-300" />
+            <p className="text-xs">No scores yet. Be the first!</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {topScores.map((entry, index) => (
-              <div key={entry._id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+              <div key={entry._id} className="flex items-center justify-between p-2 rounded bg-gray-50">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center w-6">
+                  <div className="flex items-center justify-center w-4">
                     {getRankIcon(entry.rank || index + 1)}
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                    {entry.firstName?.charAt(0) || '?'}
+                  <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
+                    {entry.photo_url ? (
+                      <img 
+                        src={entry.photo_url} 
+                        alt={`${entry.firstName} avatar`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs font-bold">
+                        {entry.firstName?.charAt(0) || '?'}
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">
+                    <div className="text-xs font-medium truncate">
                       {entry.firstName} {entry.lastName || ''}
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
+                      <MapPin className="w-2 h-2" />
                       {entry.city}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold">
+                  <div className="text-xs font-bold">
                     {formatScore(entry.score)}
                   </div>
                   <Badge className={`text-xs ${getScoreTier(entry.score).color}`}>

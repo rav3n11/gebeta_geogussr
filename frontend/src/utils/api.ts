@@ -15,6 +15,7 @@ export interface LeaderboardEntry {
   username?: string
   firstName: string
   lastName?: string
+  photo_url?: string
   score: number
   city: string
   gameMode: 'random' | 'city'

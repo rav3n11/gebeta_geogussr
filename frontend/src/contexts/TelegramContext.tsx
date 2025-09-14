@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import WebApp from '@twa-dev/sdk'
+import { generateRandomName, generateAvatarUrl, getStoredUserName, storeUserName } from '../utils/userGenerator'
 
 type WebAppType = typeof WebApp
 
@@ -178,15 +179,22 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
           }
           setUser(fallbackUser)
         } else {
-          // Development mode - create mock data
-          console.log('Using development mock user')
+          // Development mode - use random name with avatar
+          console.log('Using development mode with random name')
+          let userName = getStoredUserName()
+          if (!userName) {
+            userName = generateRandomName()
+            storeUserName(userName)
+          }
+          
           const mockUser: TelegramUser = {
-            id: 123456789,
-            first_name: 'Development',
-            last_name: 'User',
-            username: 'devuser',
+            id: Math.floor(Math.random() * 1000000) + 100000, // Random ID
+            first_name: userName,
+            last_name: '',
+            username: userName.toLowerCase(),
             language_code: 'en',
-            is_premium: false
+            is_premium: false,
+            photo_url: generateAvatarUrl(userName)
           }
           setUser(mockUser)
         }

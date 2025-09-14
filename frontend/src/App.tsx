@@ -81,20 +81,23 @@ function AppContent() {
           const city = currentPlayingCity || 'Random'
           const gameMode = currentPlayingCity ? 'city' : 'random'
           
-          // Only submit if we have valid initData (production mode)
-          if (initData && initData.trim() !== '') {
-            await apiClient.submitScore({
-              score: state.score,
-              city,
-              gameMode,
-              distance: state.distance || 0,
-              roundScore: state.roundScore || 0
-            }, initData)
-            
-            console.log('Score submitted successfully!')
-          } else {
-            console.log('Skipping score submission in development mode (no initData)')
+          // Always submit score - backend will handle validation
+          const requestData: any = {
+            score: state.score,
+            city,
+            gameMode,
+            distance: state.distance || 0,
+            roundScore: state.roundScore || 0
           }
+          
+          // Add user data for development mode
+          if (!initData || initData.trim() === '') {
+            requestData.userData = user
+          }
+          
+          await apiClient.submitScore(requestData, initData || '')
+          
+          console.log('Score submitted successfully!')
         } catch (error) {
           console.error('Failed to submit score:', error)
           // Don't show error to user, just log it

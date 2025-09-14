@@ -74,10 +74,10 @@ export default function Leaderboard({ }: LeaderboardProps) {
   }
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-500" />
-    if (rank === 2) return <Medal className="w-5 h-5 text-gray-400" />
-    if (rank === 3) return <Award className="w-5 h-5 text-amber-600" />
-    return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-gray-500">#{rank}</span>
+    if (rank === 1) return <Trophy className="w-4 h-4 text-black" />
+    if (rank === 2) return <Medal className="w-4 h-4 text-gray-600" />
+    if (rank === 3) return <Award className="w-4 h-4 text-gray-600" />
+    return <span className="w-4 h-4 flex items-center justify-center text-xs font-bold text-gray-500">#{rank}</span>
   }
 
   const formatScore = (score: number) => {
@@ -103,18 +103,18 @@ export default function Leaderboard({ }: LeaderboardProps) {
   }
 
   const getScoreTier = (score: number) => {
-    if (score >= 950) return { tier: 'Perfect!', color: 'bg-green-500' }
-    if (score >= 800) return { tier: 'Excellent', color: 'bg-blue-500' }
-    if (score >= 600) return { tier: 'Great', color: 'bg-purple-500' }
-    if (score >= 400) return { tier: 'Good', color: 'bg-yellow-500' }
-    if (score >= 200) return { tier: 'Fair', color: 'bg-orange-500' }
-    return { tier: 'Miss', color: 'bg-red-500' }
+    if (score >= 950) return { tier: 'Perfect!', color: 'bg-black text-white' }
+    if (score >= 800) return { tier: 'Excellent', color: 'bg-gray-800 text-white' }
+    if (score >= 600) return { tier: 'Great', color: 'bg-gray-600 text-white' }
+    if (score >= 400) return { tier: 'Good', color: 'bg-gray-400 text-black' }
+    if (score >= 200) return { tier: 'Fair', color: 'bg-gray-300 text-black' }
+    return { tier: 'Miss', color: 'bg-gray-200 text-black' }
   }
 
   return (
     <div className="space-y-4">
           {/* Tabs */}
-          <div className="flex space-x-2 border-b">
+          <div className="flex space-x-1 border-b border-gray-200">
             {[
               { key: 'global', label: 'Global', icon: Users },
               { key: 'city', label: 'City', icon: MapPin },
@@ -125,37 +125,46 @@ export default function Leaderboard({ }: LeaderboardProps) {
                 variant={activeTab === key ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab(key as LeaderboardType)}
-                className="flex items-center gap-2"
+                className={`flex items-center gap-1 text-xs px-3 py-2 ${
+                  activeTab === key 
+                    ? 'bg-black text-white border-b-2 border-black' 
+                    : 'text-gray-600 hover:text-black'
+                }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3 h-3" />
                 {label}
               </Button>
             ))}
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1">
             {activeTab === 'global' && (
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 {['all', 'random', 'city'].map((mode) => (
                   <Button
                     key={mode}
                     variant={gameMode === mode ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setGameMode(mode as GameMode)}
+                    className={`text-xs px-2 py-1 ${
+                      gameMode === mode 
+                        ? 'bg-black text-white' 
+                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
-                    {mode === 'all' ? 'All Games' : mode === 'random' ? 'Random' : 'City'}
+                    {mode === 'all' ? 'All' : mode === 'random' ? 'Random' : 'City'}
                   </Button>
                 ))}
               </div>
             )}
             
             {activeTab === 'city' && (
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <select
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm"
+                  className="px-2 py-1 border border-gray-300 rounded text-xs bg-white"
                 >
                   {cities.map((city) => (
                     <option key={city} value={city}>{city}</option>
@@ -167,25 +176,25 @@ export default function Leaderboard({ }: LeaderboardProps) {
 
           {/* User Best Score */}
           {userBestScore && (
-            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-              <CardContent className="p-4">
+            <Card className="bg-gray-50 border border-gray-200">
+              <CardContent className="p-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-white font-bold text-xs">
                       YOU
                     </div>
                     <div>
-                      <div className="font-semibold">Your Best Score</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm font-medium">Your Best Score</div>
+                      <div className="text-xs text-gray-600">
                         {userBestScore.city} • {formatDistance(userBestScore.distance)}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-lg font-bold text-black">
                       {formatScore(userBestScore.score)}
                     </div>
-                    <Badge className={getScoreTier(userBestScore.score).color}>
+                    <Badge className={`text-xs ${getScoreTier(userBestScore.score).color}`}>
                       {getScoreTier(userBestScore.score).tier}
                     </Badge>
                   </div>
@@ -196,17 +205,17 @@ export default function Leaderboard({ }: LeaderboardProps) {
 
           {/* Loading State */}
           {loading && (
-            <div className="flex items-center justify-center py-8">
-              <Spinner size="lg" />
-              <span className="ml-2 text-gray-600">Loading leaderboard...</span>
+            <div className="flex items-center justify-center py-6">
+              <Spinner size="md" />
+              <span className="ml-2 text-sm text-gray-600">Loading...</span>
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <div className="text-center py-8 text-red-500">
-              <p>{error}</p>
-              <Button variant="outline" size="sm" onClick={loadLeaderboard} className="mt-2">
+            <div className="text-center py-6 text-gray-600">
+              <p className="text-sm">{error}</p>
+              <Button variant="outline" size="sm" onClick={loadLeaderboard} className="mt-2 text-xs">
                 Try Again
               </Button>
             </div>
@@ -214,41 +223,51 @@ export default function Leaderboard({ }: LeaderboardProps) {
 
           {/* Leaderboard */}
           {!loading && !error && (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-1 max-h-96 overflow-y-auto">
               {leaderboard.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No scores yet. Be the first to play!</p>
+                <div className="text-center py-6 text-gray-500">
+                  <Trophy className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No scores yet. Be the first to play!</p>
                 </div>
               ) : (
                 leaderboard.map((entry, index) => (
-                  <Card key={entry._id} className={`${index < 3 ? 'border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50' : ''}`}>
-                    <CardContent className="p-4">
+                  <Card key={entry._id} className={`${index < 3 ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
+                    <CardContent className="p-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-8">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-6">
                             {getRankIcon(entry.rank || index + 1)}
                           </div>
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
-                            {entry.firstName?.charAt(0) || '?'}
+                          <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                            {entry.photo_url ? (
+                              <img 
+                                src={entry.photo_url} 
+                                alt={`${entry.firstName} avatar`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs font-bold">
+                                {entry.firstName?.charAt(0) || '?'}
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <div className="font-semibold">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">
                               {entry.firstName} {entry.lastName || ''}
                             </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-2">
+                            <div className="text-xs text-gray-600 flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
                               {entry.city}
-                              <Clock className="w-3 h-3 ml-2" />
+                              <Clock className="w-3 h-3 ml-1" />
                               {formatTimestamp(entry.timestamp)}
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-xl font-bold">
+                          <div className="text-sm font-bold text-black">
                             {formatScore(entry.score)}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-xs text-gray-600">
                             {formatDistance(entry.distance)}
                           </div>
                           <Badge className={`text-xs ${getScoreTier(entry.score).color}`}>

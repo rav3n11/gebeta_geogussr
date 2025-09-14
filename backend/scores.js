@@ -4,6 +4,51 @@ const crypto = require('crypto-js')
 
 const router = express.Router()
 
+// Clean up duplicate scores - keep only the best score per user per gameMode
+async function cleanupDuplicateScores(scoresCollection) {
+  try {
+    // Get all scores grouped by userId and gameMode
+    const pipeline = [
+      {
+        $group: {
+          _id: { userId: '$userId', gameMode: '$gameMode' },
+          scores: { $push: '$$ROOT' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: { count: { $gt: 1 } }
+      }
+    ]
+    
+    const duplicates = await scoresCollection.aggregate(pipeline).toArray()
+    
+    for (const group of duplicates) {
+      const { userId, gameMode } = group._id
+      const scores = group.scores
+      
+      // Find the best score (highest score, then most recent if tied)
+      const bestScore = scores.reduce((best, current) => {
+        if (current.score > best.score) return current
+        if (current.score === best.score && current.timestamp > best.timestamp) return current
+        return best
+      })
+      
+      // Remove all other scores for this user/gameMode
+      const idsToRemove = scores
+        .filter(score => score._id.toString() !== bestScore._id.toString())
+        .map(score => score._id)
+      
+      if (idsToRemove.length > 0) {
+        await scoresCollection.deleteMany({ _id: { $in: idsToRemove } })
+        console.log(`[${new Date().toISOString()}] Cleaned up ${idsToRemove.length} duplicate scores for user ${userId} (${gameMode})`)
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning up duplicate scores:', error)
+  }
+}
+
 // Telegram Web App validation
 function validateTelegramData(initData, botToken) {
   try {
@@ -51,32 +96,52 @@ router.post('/', async (req, res) => {
     } = req.body
 
     // Validate required fields
-    if (!score || !city || !gameMode || !initData) {
+    if (!score || !city || !gameMode) {
       console.log(`[${new Date().toISOString()}] POST /api/scores - Missing required fields`)
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Validate Telegram data
-    const botToken = process.env.TELEGRAM_BOT_TOKEN
-    if (!botToken) {
-      return res.status(500).json({ error: 'Bot token not configured' })
-    }
+    let user
 
-    if (!validateTelegramData(initData, botToken)) {
-      console.log(`[${new Date().toISOString()}] POST /api/scores - Invalid Telegram data`)
-      return res.status(401).json({ error: 'Invalid Telegram data' })
-    }
+    // Handle development mode (empty initData) or production mode
+    if (!initData || initData.trim() === '') {
+      // Development mode - extract user data from request body
+      console.log(`[${new Date().toISOString()}] POST /api/scores - Development mode - using request user data`)
+      const { userData } = req.body
+      
+      if (!userData) {
+        return res.status(400).json({ error: 'User data required in development mode' })
+      }
+      
+      user = userData
+    } else {
+      // Production mode - validate Telegram data
+      const botToken = process.env.TELEGRAM_BOT_TOKEN
+      if (!botToken) {
+        return res.status(500).json({ error: 'Bot token not configured' })
+      }
 
-    // Parse user data from initData
-    const urlParams = new URLSearchParams(initData)
-    const userParam = urlParams.get('user')
-    if (!userParam) {
-      return res.status(400).json({ error: 'User data not found' })
-    }
+      if (!validateTelegramData(initData, botToken)) {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - Invalid Telegram data`)
+        return res.status(401).json({ error: 'Invalid Telegram data' })
+      }
 
-    const user = JSON.parse(userParam)
-    if (!user.id || !user.first_name) {
-      return res.status(400).json({ error: 'Invalid user data' })
+      // Parse user data from initData
+      const urlParams = new URLSearchParams(initData)
+      const userParam = urlParams.get('user')
+      if (!userParam) {
+        return res.status(400).json({ error: 'User data not found in initData' })
+      }
+
+      try {
+        user = JSON.parse(userParam)
+      } catch (error) {
+        return res.status(400).json({ error: 'Invalid user data format' })
+      }
+
+      if (!user.id || !user.first_name) {
+        return res.status(400).json({ error: 'Invalid user data' })
+      }
     }
 
     // Create score document
@@ -85,6 +150,7 @@ router.post('/', async (req, res) => {
       username: user.username,
       firstName: user.first_name,
       lastName: user.last_name,
+      photo_url: user.photo_url,
       score: parseInt(score),
       city,
       gameMode,
@@ -97,8 +163,34 @@ router.post('/', async (req, res) => {
     const database = await connectDB()
     const scoresCollection = database.collection('scores')
     
-    const result = await scoresCollection.insertOne(scoreDoc)
-    console.log(`[${new Date().toISOString()}] POST /api/scores - Score saved successfully for user ${user.id} (${user.first_name})`)
+    // Check if user already has a score for this gameMode
+    const existingScore = await scoresCollection.findOne({
+      userId: user.id,
+      gameMode: gameMode
+    })
+    
+    let result
+    if (existingScore) {
+      // Update existing score only if new score is better
+      if (parseInt(score) > existingScore.score) {
+        result = await scoresCollection.updateOne(
+          { _id: existingScore._id },
+          { $set: scoreDoc }
+        )
+        console.log(`[${new Date().toISOString()}] POST /api/scores - Score updated for user ${user.id} (${user.first_name}) - new score: ${score}`)
+      } else {
+        console.log(`[${new Date().toISOString()}] POST /api/scores - Score not updated for user ${user.id} (${user.first_name}) - existing score ${existingScore.score} is better than ${score}`)
+        // Return existing score info
+        result = { upsertedId: existingScore._id, modifiedCount: 0 }
+      }
+    } else {
+      // Insert new score
+      result = await scoresCollection.insertOne(scoreDoc)
+      console.log(`[${new Date().toISOString()}] POST /api/scores - New score saved for user ${user.id} (${user.first_name}) - score: ${score}`)
+    }
+    
+    // Clean up duplicate entries - keep only the best score per user per gameMode
+    await cleanupDuplicateScores(scoresCollection)
     
     // Get updated leaderboards
     const globalLeaderboard = await scoresCollection

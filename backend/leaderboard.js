@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     if (city) {
       query.city = city
     }
-    if (gameMode) {
+    if (gameMode && gameMode !== 'all') {
       query.gameMode = gameMode
     }
 
