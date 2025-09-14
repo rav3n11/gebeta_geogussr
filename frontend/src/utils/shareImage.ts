@@ -223,49 +223,84 @@ export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-s
   const webApp = (window as any).Telegram?.WebApp
   
   if (webApp) {
-    // Try to use the downloadFile method if available
-    if (webApp.downloadFile) {
-      try {
-        // Convert data URL to blob
-        fetch(dataUrl).then(response => response.blob()).then(blob => {
-          // Create a temporary URL for the blob
-          const blobUrl = URL.createObjectURL(blob)
-          
-          // Use Telegram's downloadFile method
-          webApp.downloadFile({
-            url: blobUrl,
-            filename: fileName
-          }, (success: boolean) => {
-            if (success) {
-              webApp.showAlert('Download started!')
-            } else {
-              webApp.showAlert('Download failed. Try again.')
-            }
-            // Clean up the blob URL
-            URL.revokeObjectURL(blobUrl)
-          })
-        }).catch(() => {
-          // Fallback to bot integration
-          downloadViaBot(webApp, dataUrl, fileName)
-        })
-      } catch (error) {
+    // In Telegram, use a simpler approach
+    // Create a temporary anchor element and trigger download
+    try {
+      // Convert data URL to blob
+      fetch(dataUrl).then(response => response.blob()).then(blob => {
+        // Create a temporary URL for the blob
+        const blobUrl = URL.createObjectURL(blob)
+        
+        // Create a temporary anchor element
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = fileName
+        link.style.display = 'none'
+        
+        // Add to DOM, click, and remove
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // Clean up the blob URL
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl)
+        }, 1000)
+        
+        // Show success message
+        webApp.showAlert('Download started! Check your downloads folder.')
+        
+      }).catch(() => {
         // Fallback to bot integration
         downloadViaBot(webApp, dataUrl, fileName)
-      }
-    } else {
+      })
+    } catch (error) {
       // Fallback to bot integration
       downloadViaBot(webApp, dataUrl, fileName)
     }
     return
   }
   
-  // Regular browser download
-  const link = document.createElement('a')
-  link.download = fileName
-  link.href = dataUrl
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  // Regular browser download - use the same blob approach for consistency
+  try {
+    fetch(dataUrl).then(response => response.blob()).then(blob => {
+      const blobUrl = URL.createObjectURL(blob)
+      
+      const link = document.createElement('a')
+      link.download = fileName
+      link.href = blobUrl
+      link.style.display = 'none'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up the blob URL
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl)
+      }, 1000)
+    }).catch(() => {
+      // Fallback to direct data URL download
+      const link = document.createElement('a')
+      link.download = fileName
+      link.href = dataUrl
+      link.style.display = 'none'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    })
+  } catch (error) {
+    // Final fallback to direct data URL download
+    const link = document.createElement('a')
+    link.download = fileName
+    link.href = dataUrl
+    link.style.display = 'none'
+    
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 }
 
 const downloadViaBot = (webApp: any, dataUrl: string, fileName: string) => {
@@ -305,24 +340,28 @@ export const shareImage = async (data: ShareImageData) => {
       return
     }
     
-    // Try to use native sharing if available (for regular browsers)
+    // For regular browsers, try native sharing first
     if (navigator.share && navigator.canShare) {
-      // Convert data URL to blob
-      const response = await fetch(dataUrl)
-      const blob = await response.blob()
-      const file = new File([blob], 'gebeta-score.png', { type: 'image/png' })
-      
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: 'My Gebeta Score!',
-          text: `I scored ${data.score} points in Guess the Place! Can you beat my score?`,
-          files: [file]
-        })
-        return
+      try {
+        // Convert data URL to blob
+        const response = await fetch(dataUrl)
+        const blob = await response.blob()
+        const file = new File([blob], 'gebeta-score.png', { type: 'image/png' })
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'My Gebeta Score!',
+            text: `I scored ${data.score} points in Guess the Place! Can you beat my score?`,
+            files: [file]
+          })
+          return
+        }
+      } catch (shareError) {
+        console.log('Native sharing failed, falling back to download')
       }
     }
     
-    // Fallback to download
+    // Fallback to download for regular browsers
     downloadShareImage(dataUrl)
   } catch (error) {
     console.error('Error sharing image:', error)
