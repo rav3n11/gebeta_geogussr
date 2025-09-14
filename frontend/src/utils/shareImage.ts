@@ -11,6 +11,13 @@ interface ShareImageData {
   isNewBest: boolean
 }
 
+// Telegram WebApp API types for sharing
+interface TelegramWebAppSharing {
+  shareToStory?: (params: { url: string; text: string }) => Promise<void>
+  sendData: (data: string) => void
+  showAlert: (message: string) => void
+}
+
 export const generateShareImage = async (data: ShareImageData): Promise<string> => {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -218,6 +225,20 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
 }
 
 export const downloadShareImage = (dataUrl: string, fileName: string = 'gebeta-score.png') => {
+  // Check if we're in Telegram WebApp
+  const isTelegram = (window as any).Telegram?.WebApp
+  
+  if (isTelegram) {
+    // In Telegram, we can't directly download files, so we'll open in a new tab
+    // This allows users to long-press and save the image
+    const newWindow = window.open(dataUrl, '_blank')
+    if (newWindow) {
+      newWindow.document.title = fileName
+    }
+    return
+  }
+  
+  // Regular browser download
   const link = document.createElement('a')
   link.download = fileName
   link.href = dataUrl
@@ -230,7 +251,16 @@ export const shareImage = async (data: ShareImageData) => {
   try {
     const dataUrl = await generateShareImage(data)
     
-    // Try to use native sharing if available
+    // Check if we're in Telegram WebApp
+    const isTelegram = (window as any).Telegram?.WebApp
+    
+    if (isTelegram) {
+      // Use Telegram's sharing methods
+      await shareInTelegram(dataUrl, data)
+      return
+    }
+    
+    // Try to use native sharing if available (for regular browsers)
     if (navigator.share && navigator.canShare) {
       // Convert data URL to blob
       const response = await fetch(dataUrl)
@@ -252,5 +282,69 @@ export const shareImage = async (data: ShareImageData) => {
   } catch (error) {
     console.error('Error sharing image:', error)
     throw error
+  }
+}
+
+const shareInTelegram = async (dataUrl: string, data: ShareImageData) => {
+  try {
+    // Convert data URL to blob
+    const response = await fetch(dataUrl)
+    const blob = await response.blob()
+    
+    // Convert blob to base64 for Telegram
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result as string
+        resolve(result.split(',')[1]) // Remove data:image/png;base64, prefix
+      }
+      reader.readAsDataURL(blob)
+    })
+    
+    const webApp = (window as any).Telegram?.WebApp as TelegramWebAppSharing
+    
+    if (!webApp) {
+      throw new Error('Telegram WebApp not available')
+    }
+    
+    // Try to share to story first (if available)
+    if (webApp.shareToStory) {
+      try {
+        await webApp.shareToStory({
+          url: `data:image/png;base64,${base64}`,
+          text: `I scored ${data.score} points in Guess the Place! Can you beat my score? 🎯`
+        })
+        return
+      } catch (storyError) {
+        console.log('Story sharing not available, trying other methods')
+      }
+    }
+    
+    // Fallback: Send data to bot for sharing
+    const shareText = `🎯 *My Gebeta Score!*\n\n` +
+      `Score: ${data.score} points\n` +
+      `Distance: ${data.distance ? `${Math.round(data.distance)}km` : 'Unknown'}\n` +
+      `Tier: ${data.tier.tier}\n` +
+      `${data.isNewBest ? '🏆 NEW BEST!' : ''}\n\n` +
+      `Can you beat my score? Play now: https://t.me/gebeta_bot`
+    
+    // Send data to bot
+    webApp.sendData(JSON.stringify({
+      type: 'share_score',
+      score: data.score,
+      distance: data.distance,
+      tier: data.tier.tier,
+      isNewBest: data.isNewBest,
+      image: base64,
+      text: shareText
+    }))
+    
+    // Show a popup to inform user
+    webApp.showAlert('Score shared! Check your chat with the bot to see your score image.')
+    
+  } catch (error) {
+    console.error('Error sharing in Telegram:', error)
+    // Fallback to download
+    downloadShareImage(dataUrl)
   }
 }
