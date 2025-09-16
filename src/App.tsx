@@ -7,14 +7,18 @@ import { DEFAULT_SETTINGS, AVAILABLE_CITIES } from './types/game'
 import { MainMenu } from './components/MainMenu'
 import { PreparingGame } from './components/PreparingGame'
 import { TileView } from './components/TileView'
+// import { ImageView } from './components/ImageView'
 import { MapView } from './components/MapView'
 import { Results } from './components/Results'
 import { Settings } from './components/Settings'
+import { ContributePlaceModal } from './components/ContributePlaceModal'
+import { ImageView } from './components/ImageView'
 
 function App() {
   const mapRef = useRef<GebetaMapRef>(null)
   const { state, startGame, startTileView, showMap, setGuess, setLocation, showResults } = useGameState()
   const [tileViewTimeLeft, setTileViewTimeLeft] = useState(0)
+  const [imageViewTimeLeft, setImageViewTimeLeft] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const isLoadingRef = useRef(false)
   const timeLeftRef = useRef(0)
@@ -24,6 +28,9 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showContribute, setShowContribute] = useState(false)
+  const [isImageMode, setIsImageMode] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [settings, setSettings] = useState<GameSettings>(() => {
     const saved = localStorage.getItem('gameSettings')
     return saved ? JSON.parse(saved) : DEFAULT_SETTINGS
@@ -97,16 +104,60 @@ function App() {
 
   // Set a target location when preparing phase starts (only once)
   useEffect(() => {
-    if (state.phase === 'preparing' && !hasStarted) {
+    if (state.phase === 'preparing' && !hasStarted && !isImageMode) {
       setHasStarted(true)
       const randomLocation = getRandomCoordinates(settings.selectedCities)
       setLocation(randomLocation)
     }
-  }, [state.phase, hasStarted, setLocation])
+  }, [state.phase, hasStarted, setLocation, isImageMode])
 
-  // Transition from preparing to tile-view when map loads
+  //img mode...fetching random contribution
   useEffect(() => {
-    if (state.phase === 'preparing' && mapLoaded && state.currentLocation) {
+    const run = async () => {
+      if (state.phase === 'preparing' && !hasStarted && isImageMode) {
+        setHasStarted(true)
+        try {
+          const res = await fetch('/api/contributions')
+          if (!res.ok) throw new Error('failed to fetch contributions :( ')
+          const list: any[] = await res.json()
+          if (!list || list.length === 0) throw new Error('no contributions available')
+          //random pcik
+          const item = list[Math.floor(Math.random() * list.length)]
+          if (item.longitude == null || item.latitude == null) throw new Error('invalid contribution coordinates')
+          setLocation([item.longitude, item.latitude])
+          setImageUrl(item.image_url || item.imageUrl)
+          //for the image countdown
+          timeLeftRef.current = settings.tileViewDuration
+          setImageViewTimeLeft(settings.tileViewDuration)
+          if (timerRef.current) {
+            clearInterval(timerRef.current)
+            timerRef.current = null
+          }
+          timerRef.current = setInterval(() => {
+            timeLeftRef.current -= 1
+            setImageViewTimeLeft(timeLeftRef.current)
+            if (timeLeftRef.current <= 0) {
+              if (timerRef.current) {
+                clearInterval(timerRef.current)
+                timerRef.current = null
+              }
+              showMap()
+            }
+          }, 1000)
+        } catch (e) {
+          console.error(e)
+          // fallback 
+          setIsImageMode(false)
+          setHasStarted(false)
+        }
+      }
+    }
+    run()
+  }, [state.phase, hasStarted, isImageMode, settings.tileViewDuration, setLocation, showMap])
+
+ 
+  useEffect(() => {
+    if (state.phase === 'preparing' && mapLoaded && state.currentLocation && !isImageMode) {
       // Add a small delay to show the preparing phase
       const timer = setTimeout(() => {
         startTileView()
@@ -116,11 +167,11 @@ function App() {
       
       return () => clearTimeout(timer)
     }
-  }, [state.phase, mapLoaded, state.currentLocation, startTileView])
+  }, [state.phase, mapLoaded, state.currentLocation, startTileView, isImageMode])
 
   // Handle tile view timer - wait for map to load, then countdown
   useEffect(() => {
-    if (state.phase === 'tile-view' && hasStarted && mapLoaded && isLoadingRef.current) {
+    if (state.phase === 'tile-view' && hasStarted && mapLoaded && isLoadingRef.current && !isImageMode) {
       setIsLoading(false)
       isLoadingRef.current = false
       
@@ -148,7 +199,7 @@ function App() {
         }
       }, 1000)
     }
-  }, [state.phase, hasStarted, mapLoaded, settings.tileViewDuration])
+  }, [state.phase, hasStarted, mapLoaded, settings.tileViewDuration, isImageMode])
 
   // Cleanup timer on unmount or phase change
   useEffect(() => {
@@ -165,11 +216,14 @@ function App() {
     if (state.phase === 'menu') {
       setHasStarted(false)
       setTileViewTimeLeft(0)
+      setImageViewTimeLeft(0)
       setCurrentMarker(null)
       setMapLoaded(false)
       setIsSubmitting(false)
       setIsLoading(false)
       isLoadingRef.current = false
+      setIsImageMode(false)
+      setImageUrl(null)
       
       // Clear any running timer
       if (timerRef.current) {
@@ -182,10 +236,13 @@ function App() {
 
   // Draw results visualization
   useEffect(() => {
-    if (state.phase === 'results' && state.currentLocation && state.userGuess && mapRef.current && mapLoaded) {
+    if (state.phase === 'results' && state.currentLocation && state.userGuess) {
       // Add a small delay to ensure map style is fully loaded
       const addResultsVisualization = () => {
-        if (!mapRef.current) return
+        if (!mapRef.current) {
+          setTimeout(addResultsVisualization, 100)
+          return
+        }
         
         try {
           // Clear previous markers and paths
@@ -197,7 +254,7 @@ function App() {
             state.currentLocation!,
             '/pin.png',
             [30, 30],
-            () => console.log('Actual location clicked!'),
+            undefined,
             10,
             '<b>🎯 Actual Location</b>'
           )
@@ -207,7 +264,7 @@ function App() {
             state.userGuess!,
             '/pin.png',
             [30, 30],
-            () => console.log('Your guess clicked!'),
+            undefined,
             10,
             '<b>📍 Your Guess</b>'
           )
@@ -229,7 +286,7 @@ function App() {
       // Start the visualization process
       addResultsVisualization()
     }
-  }, [state.phase, state.currentLocation, state.userGuess, mapLoaded])
+  }, [state.phase, state.currentLocation, state.userGuess])
 
   const handleMapLoad = useCallback(() => {
     setMapLoaded(true)
@@ -239,6 +296,14 @@ function App() {
   const handleStartGame = useCallback(() => {
     setCurrentPlayingCity(null) // Reset to random play
     setHasStarted(false) // Reset to allow new location selection
+    setIsImageMode(false)
+    startGame()
+  }, [startGame])
+
+  const handleStartImageGame = useCallback(() => {
+    setCurrentPlayingCity(null)
+    setHasStarted(false)
+    setIsImageMode(true)
     startGame()
   }, [startGame])
 
@@ -262,6 +327,14 @@ function App() {
     setShowSettings(false)
   }, [])
 
+  const handleOpenContribute = useCallback(() => {
+    setShowContribute(true)
+  }, [])
+
+  const handleCloseContribute = useCallback(() => {
+    setShowContribute(false)
+  }, [])
+
   const handleMapClick = useCallback((lngLat: [number, number]) => {
     if (state.phase === 'map-view') {
       setCurrentMarker(lngLat)
@@ -273,7 +346,7 @@ function App() {
           lngLat,
           '/pin.png', // Local pin icon
           [30, 30], // Size
-          () => console.log('Marker clicked!'), // Click handler
+          undefined,
           10, // Z-index
           '<b>Your Guess</b>' // Popup HTML
         )
@@ -347,13 +420,15 @@ function App() {
       {state.phase === 'menu' && (
         <MainMenu
           onStartGame={handleStartGame}
+          onStartImageGame={handleStartImageGame}
           onStartSpecificCity={handleStartSpecificCity}
           onOpenSettings={handleOpenSettings}
+          onContribute={handleOpenContribute}
           bestScore={bestScore}
           cityScores={cityScores}
         />
       )}
-      {(state.phase === 'preparing' || state.phase === 'tile-view') && (
+      {(state.phase === 'preparing' || state.phase === 'tile-view') && !isImageMode && (
         <div className="relative">
           {state.phase === 'preparing' && (
             <div className="absolute inset-0 z-20">
@@ -369,6 +444,9 @@ function App() {
             showOverlay={state.phase === 'preparing'}
           />
         </div>
+      )}
+      {(state.phase === 'preparing' || state.phase === 'image-view') && isImageMode && imageUrl && (
+        <ImageView imageUrl={imageUrl} timeLeft={imageViewTimeLeft} />
       )}
       {state.phase === 'map-view' && (
         <MapView
@@ -403,6 +481,12 @@ function App() {
           onClearAllCities={clearAllCities}
           onResetBestScore={resetBestScore}
           onResetToDefaults={() => setSettings(DEFAULT_SETTINGS)}
+        />
+      )}
+      {showContribute && (
+        <ContributePlaceModal
+          isOpen={showContribute}
+          onClose={handleCloseContribute}
         />
       )}
     </div>
