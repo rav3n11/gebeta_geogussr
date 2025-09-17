@@ -9,11 +9,13 @@ interface MainMenuProps {
   onStartGame: () => void
   onStartSpecificCity: (cityName: string) => void
   onOpenSettings: () => void
+  onContribute: () => void
+  onStartImageGame?: () => void
   bestScore: number
   cityScores: Record<string, number>
 }
 
-export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings, bestScore, cityScores }: MainMenuProps) => {
+export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings, onContribute, onStartImageGame, bestScore, cityScores }: MainMenuProps) => {
   const [showCitySelection, setShowCitySelection] = useState(false)
 
   const handleCitySelect = (cityName: string) => {
@@ -89,6 +91,14 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
           <Navigation className="w-5 h-5 mr-2" />
           Random Place
         </Button>
+
+        <Button 
+          onClick={onStartImageGame}
+          size="lg" 
+          className="w-full h-12 text-lg font-semibold bg-black text-white hover:bg-gray-800"
+        >
+          Random Place (By Images)
+        </Button>
         
         <Button 
           onClick={() => setShowCitySelection(true)}
@@ -98,6 +108,15 @@ export const MainMenu = memo(({ onStartGame, onStartSpecificCity, onOpenSettings
         >
           <MapPin className="w-5 h-5 mr-2" />
           Choose City
+        </Button>
+        
+        <Button 
+          onClick={onContribute}
+          variant="outline"
+          size="lg" 
+          className="w-full h-12 text-lg font-semibold border-green-200 text-green-700 hover:bg-green-50"
+        >
+          Contribute Place
         </Button>
         
         <div className="flex justify-center space-x-2 text-sm text-gray-600">

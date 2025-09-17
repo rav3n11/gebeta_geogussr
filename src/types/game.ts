@@ -1,5 +1,5 @@
 export interface GameState {
-  phase: 'menu' | 'preparing' | 'tile-view' | 'countdown' | 'map-view' | 'results'
+  phase: 'menu' | 'preparing' | 'tile-view' | 'image-view' | 'countdown' | 'map-view' | 'results'
   score: number
   round: number
   currentLocation: [number, number] | null
@@ -9,6 +9,8 @@ export interface GameState {
   roundScore: number | null
   isLoading: boolean
   isSubmitting: boolean
+  isImageMode?: boolean
+  imageUrl?: string | null
 }
 
 export interface GameSettings {
